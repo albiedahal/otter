@@ -47,8 +47,8 @@ protected:
 
   //
   void computeQpStress();
-  virtual Real computeHardeningValue(Real scalar);
-  virtual Real computeHardeningDerivative(Real scalar);
+  virtual Real computeHardeningValue(Real scalar, Real j);
+  virtual Real computeHardeningDerivative(Real scalar, Real j);
 
 
   /// Booleans for validity of params
@@ -200,15 +200,15 @@ protected:
   const MaterialProperty<Real> & _total_stretch_old;
   MaterialProperty<RealVectorValue> & _direct_stress;
   const MaterialProperty<RealVectorValue> & _direct_stress_old;
-  MaterialProperty<Real> & _plastic_strain;
-  const MaterialProperty<Real> & _plastic_strain_old;
+  MaterialProperty<RealVectorValue> & _plastic_strain;
+  const MaterialProperty<RealVectorValue> & _plastic_strain_old;
   MaterialProperty<Real> & _stres;
   const MaterialProperty<Real> & _stres_old;
   const MaterialProperty<RealVectorValue> & _moment_old;
   const MaterialProperty<RealVectorValue> & _material_flexure;
 
-  MaterialProperty<Real> & _hardening_variable;
-  const MaterialProperty<Real> & _hardening_variable_old;
+  MaterialProperty<RealVectorValue> & _hardening_variable;
+  const MaterialProperty<RealVectorValue> & _hardening_variable_old;
 
   // std::vector<Real> _bucket;
 

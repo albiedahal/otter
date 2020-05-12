@@ -32,7 +32,8 @@ ComputeBeamResultantsl::ComputeBeamResultantsl(const InputParameters & parameter
     _force(declareProperty<RealVectorValue>("forces")),
     _moment(declareProperty<RealVectorValue>("moments")),
     _force_old(getMaterialPropertyOld<RealVectorValue>("forces")),
-    _moment_old(getMaterialPropertyOld<RealVectorValue>("moments"))
+    _moment_old(getMaterialPropertyOld<RealVectorValue>("moments")),
+    _stres(getMaterialPropertyByName<Real>("stress_resultant"))
 {
 }
 
@@ -65,6 +66,7 @@ ComputeBeamResultantsl::computeQpProperties()
   moment_increment(2) = _material_flexure[_qp](2) * _rot_strain_increment[_qp](2);
 
   _moment[_qp] = _total_rotation[0].transpose() * moment_increment + _moment_old[_qp];
+  _moment[_qp](2) = _stres[_qp];
 
   //
   std::cout<<"moment from CBR ="<<_moment[_qp]<<std::endl;

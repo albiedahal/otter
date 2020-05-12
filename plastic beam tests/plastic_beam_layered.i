@@ -66,7 +66,7 @@
     hardening_constant = '0'
   []
   [stress]
-    type = ComputeBeamResultants
+    type = ComputeBeamResultantsl
     block = 0
     outputs = exodus
     output_properties = 'forces moments'
@@ -181,7 +181,7 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 2
+  end_time = 5
   nl_abs_tol = 1e-8
 []
 

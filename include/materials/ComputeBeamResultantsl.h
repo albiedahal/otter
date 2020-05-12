@@ -58,4 +58,6 @@ protected:
 
   /// Old force vector in global coordinate system
   const MaterialProperty<RealVectorValue> & _moment_old;
+
+  const MaterialProperty<Real> & _stres;
 };
