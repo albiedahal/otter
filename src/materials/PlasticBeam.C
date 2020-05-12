@@ -132,8 +132,8 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _relative_tolerance(parameters.get<Real>("relative_tolerance")),
     _total_stretch(declareProperty<Real>("total_stretch")),                 //curvature
     _total_stretch_old(getMaterialPropertyOld<Real>("total_stretch")),
-    // _direct_stress(declareProperty<Real>("direct_stress")),
-    // _direct_stress_old(getMaterialPropertyOld<Real>("direct_stress")),
+    _direct_stress(declareProperty<RealVectorValue>("direct_stress")),
+    _direct_stress_old(getMaterialPropertyOld<RealVectorValue>("direct_stress")),
     _plastic_strain(declareProperty<Real>("plastic_stretch")),
     _plastic_strain_old(getMaterialPropertyOld<Real>("plastic_stretch")),
     _stres(declareProperty<Real>("stress_resultant")),
@@ -142,7 +142,7 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _material_flexure(getMaterialPropertyByName<RealVectorValue>("material_flexure")),
     _hardening_variable(declareProperty<Real>("hardening_variable")),
     _hardening_variable_old(getMaterialPropertyOld<Real>("hardening_variable")),
-    _bucket(declareProperty<std::vector<double>>("_bucket")),
+    // _bucket("_bucket"),
     _max_its(1000)
 
 {
@@ -183,8 +183,18 @@ PlasticBeam::initQpStatefulProperties()
   _total_stretch[_qp] = 0.0;
   _plastic_strain[_qp] = 0.0;
   _hardening_variable[_qp] = 0.0;
-  // _direct_stress[_qp] = 0.0;
+  _direct_stress[_qp].zero();
+  // _direct_stress[_qp](0) = 0.0;
+  // _direct_stress[_qp](1) = 0.0;
+  // _direct_stress[_qp](2) = 0.0;
+  // _direct_stress[_qp](3) = 0.0;
+  // _direct_stress[_qp](4) = 0.0;
+  // _direct_stress[_qp](5) = 0.0;
   _stres[_qp] = 0.0;
+  // for(unsigned int i =0; i<6; ++i)
+  // {
+  //   _bucket[i] = 0.0;
+  // }
 
 
   // compute initial orientation of the beam for calculating initial rotation matrix
@@ -301,7 +311,7 @@ PlasticBeam::computeQpStrain()
 
   std::cout<<"rot 0 ="<<_rot0<<" rot 1 ="<<_rot1<<std::endl;
   _total_stretch[_qp] = _grad_rot_0_local_t(2);
-  std::cout<<"curvature vector = "<<_grad_rot_0_local_t<<std::endl;
+  // std::cout<<"curvature vector = "<<_grad_rot_0_local_t<<std::endl;
 
   computeQpStress();
   // std::cout<<"curvature = "<<_grad_rot_0_local_t(2)<<std::endl;
@@ -689,19 +699,16 @@ void PlasticBeam::computeQpStress()
 
   // std::cout<<"thickness = "<<thick<<std::endl;
 
-  std::vector<Real> bucket(6,0);
-
-
   for (unsigned int i = 0; i < 6; ++i)
   {
-    std::cout<<"integration layer = "<<i<<std::endl;
+    // std::cout<<"integration layer = "<<i<<std::endl;
 
     zmidl += thick/2.0;
 
-    Real trial_stress = bucket[i] + _material_flexure[_qp](2) * strain_increment * zmidl;
+    Real trial_stress = _direct_stress_old[_qp](i) + _material_flexure[_qp](2) * strain_increment * zmidl;
 
     //
-    std::cout<<"direct stress old "<<i<<" = "<<bucket[i]<<std::endl;
+    std::cout<<"direct stress old "<<i<<" = "<<_direct_stress_old[_qp](i)<<std::endl;
     std::cout<<"trial stress = "<<trial_stress<<std::endl;
     //
 
@@ -750,11 +757,14 @@ void PlasticBeam::computeQpStress()
 
       _plastic_strain[_qp] += plastic_strain_increment;
       elastic_strain_increment = strain_increment - plastic_strain_increment;
-    }
-    Real placeholder = bucket[i] + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
-    bucket[i] = placeholder;
 
-    std::cout<<"new direct stress "<<i<<" = "<<bucket[i]<<std::endl;
+      std::cout<<"elastic strain_increment = "<<elastic_strain_increment<<std::endl;
+
+    }
+    _direct_stress[_qp](i) = _direct_stress_old[_qp](i) + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+
+
+    std::cout<<"new direct stress "<<i<<" = "<<_direct_stress[_qp](i)<<std::endl;
 
     zmidl += thick/2.0;
   }

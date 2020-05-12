@@ -198,8 +198,8 @@ protected:
 
   MaterialProperty<Real> & _total_stretch;
   const MaterialProperty<Real> & _total_stretch_old;
-  // MaterialProperty<Real> & _direct_stress;
-  // const MaterialProperty<Real> & _direct_stress_old;
+  MaterialProperty<RealVectorValue> & _direct_stress;
+  const MaterialProperty<RealVectorValue> & _direct_stress_old;
   MaterialProperty<Real> & _plastic_strain;
   const MaterialProperty<Real> & _plastic_strain_old;
   MaterialProperty<Real> & _stres;
@@ -210,7 +210,7 @@ protected:
   MaterialProperty<Real> & _hardening_variable;
   const MaterialProperty<Real> & _hardening_variable_old;
 
-  std::vector<double> & _bucket;
+  // std::vector<Real> _bucket;
 
   /// maximum no. of iterations
   const unsigned int _max_its;
