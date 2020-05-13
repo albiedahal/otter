@@ -68,6 +68,8 @@ ComputeBeamResultantsl::computeQpProperties()
   _moment[_qp] = _total_rotation[0].transpose() * moment_increment + _moment_old[_qp];
   _moment[_qp](2) = _stres[_qp];
 
+  std::cout<<"moment old ="<<_moment_old[_qp]<<std::endl;
+  std::cout<<"stres qp ="<<_stres[_qp]<<std::endl;
   //
   std::cout<<"moment from CBR ="<<_moment[_qp]<<std::endl;
   //

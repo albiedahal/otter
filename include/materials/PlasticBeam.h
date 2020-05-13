@@ -200,8 +200,12 @@ protected:
   const MaterialProperty<Real> & _total_stretch_old;
   MaterialProperty<RealVectorValue> & _direct_stress;
   const MaterialProperty<RealVectorValue> & _direct_stress_old;
+  MaterialProperty<RealVectorValue> & _direct_stress_two;
+  const MaterialProperty<RealVectorValue> & _direct_stress_two_old;
   MaterialProperty<RealVectorValue> & _plastic_strain;
   const MaterialProperty<RealVectorValue> & _plastic_strain_old;
+  MaterialProperty<RealVectorValue> & _plastic_strain_two;
+  const MaterialProperty<RealVectorValue> & _plastic_strain_two_old;
   MaterialProperty<Real> & _stres;
   const MaterialProperty<Real> & _stres_old;
   const MaterialProperty<RealVectorValue> & _moment_old;
@@ -209,6 +213,9 @@ protected:
 
   MaterialProperty<RealVectorValue> & _hardening_variable;
   const MaterialProperty<RealVectorValue> & _hardening_variable_old;
+  MaterialProperty<RealVectorValue> & _hardening_variable_two;
+  const MaterialProperty<RealVectorValue> & _hardening_variable_two_old;
+
 
   // std::vector<Real> _bucket;
 

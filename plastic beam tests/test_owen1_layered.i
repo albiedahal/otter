@@ -10,7 +10,7 @@
   [beam]
   type = GeneratedMeshGenerator
   dim = 1
-  nx = 6
+  nx = 10
   xmin = 0
   xmax = 3000
   []
@@ -224,7 +224,7 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 1
+  dt = 0.5
   end_time = 5
   nl_abs_tol = 1e-8
 []

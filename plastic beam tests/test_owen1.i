@@ -61,7 +61,7 @@
     youngs_modulus = 210
   []
   [strain]
-    type = ComputeIncrementalBeamStrainl
+    type = PlasticBeam
     Iz = 84375000
     Iy = 337500000
     area = 45000
@@ -72,7 +72,7 @@
     hardening_constant = '0'
   []
   [stress]
-    type = ComputeBeamResultantsl
+    type = ComputeBeamResultants
     block = 0
     outputs = exodus
     output_properties = 'forces moments'

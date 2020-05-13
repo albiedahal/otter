@@ -134,14 +134,20 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _total_stretch_old(getMaterialPropertyOld<Real>("total_stretch")),
     _direct_stress(declareProperty<RealVectorValue>("direct_stress")),
     _direct_stress_old(getMaterialPropertyOld<RealVectorValue>("direct_stress")),
+    _direct_stress_two(declareProperty<RealVectorValue>("direct_stress_two")),
+    _direct_stress_two_old(getMaterialPropertyOld<RealVectorValue>("direct_stress_two")),
     _plastic_strain(declareProperty<RealVectorValue>("plastic_stretch")),
     _plastic_strain_old(getMaterialPropertyOld<RealVectorValue>("plastic_stretch")),
+    _plastic_strain_two(declareProperty<RealVectorValue>("plastic_stretch_two")),
+    _plastic_strain_two_old(getMaterialPropertyOld<RealVectorValue>("plastic_stretch_two")),
     _stres(declareProperty<Real>("stress_resultant")),
     _stres_old(getMaterialPropertyOld<Real>("stress_resultant")),
     _moment_old(getMaterialPropertyOld<RealVectorValue>("moments")),
     _material_flexure(getMaterialPropertyByName<RealVectorValue>("material_flexure")),
     _hardening_variable(declareProperty<RealVectorValue>("hardening_variable")),
     _hardening_variable_old(getMaterialPropertyOld<RealVectorValue>("hardening_variable")),
+    _hardening_variable_two(declareProperty<RealVectorValue>("hardening_variable_two")),
+    _hardening_variable_two_old(getMaterialPropertyOld<RealVectorValue>("hardening_variable_two")),
     // _bucket("_bucket"),
     _max_its(1000)
 
@@ -695,22 +701,26 @@ void PlasticBeam::computeQpStress()
 
   // std::cout<<"zmidl = "<<zmidl<<std::endl;
 
-  Real thick = _depth/4.0;                        //thickness of each layer (6 layers considered)
+  Real thick = _depth/6.0;                        //thickness of each layer (6 layers considered)
 
   // std::cout<<"thickness = "<<thick<<std::endl;
 
-  for (unsigned int i = 0; i < 4; ++i)
-  {
-    // std::cout<<"integration layer = "<<i<<std::endl;
 
-    Real moment = 0.0;
+  Real moment = 0.0;
+
+  for (unsigned int i = 0; i < 6; ++i)
+  {
+
+    if(i<3)
+    {
+    // std::cout<<"integration layer = "<<i<<std::endl;
 
     zmidl += thick/2.0;
 
     Real trial_stress = _direct_stress_old[_qp](i) + _material_flexure[_qp](2) * strain_increment * zmidl;
 
     //
-    std::cout<<"direct stress old "<<i<<" = "<<_direct_stress_old[_qp](i)<<std::endl;
+    std::cout<<"direct stress old "<<_qp<<i<<" = "<<_direct_stress_old[_qp](i)<<std::endl;
     std::cout<<"trial stress = "<<trial_stress<<std::endl;
     //
 
@@ -766,12 +776,90 @@ void PlasticBeam::computeQpStress()
 
     }
     _direct_stress[_qp](i) = _direct_stress_old[_qp](i) + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+
+    std::cout<<"new direct stress "<<_qp<<i<<" = "<<_direct_stress[_qp](i)<<std::endl;
+
     moment += _direct_stress[_qp](i) * _width * zmidl * thick;
     _stres[_qp] = moment;
-    std::cout<<"moment = "<<_stres[_qp]<<std::endl;
+    std::cout<<"moment = "<<_stres[_qp]<<std::endl<<std::endl;
 
     zmidl += thick/2.0;
   }
+  else if (i>2)
+  {
+    zmidl += thick/2.0;
+
+    Real trial_stress = _direct_stress_two_old[_qp](i-3) + _material_flexure[_qp](2) * strain_increment * zmidl;
+
+    //
+    std::cout<<"direct stress old "<<_qp<<i<<" = "<<_direct_stress_two_old[_qp](i-3)<<std::endl;
+    std::cout<<"trial stress = "<<trial_stress<<std::endl;
+    //
+
+    _hardening_variable_two[_qp](i-3) = _hardening_variable_two_old[_qp](i-3);
+    _plastic_strain_two[_qp](i-3) = _plastic_strain_two_old[_qp](i-3);
+
+    Real yield_condition = std::abs(trial_stress) - _hardening_variable_two[_qp](i-3) - _yield_stress;
+    Real iteration = 0;
+    Real plastic_strain_increment = 0.0;
+    Real elastic_strain_increment = strain_increment;
+
+    //
+    std::cout<<"yield condition = "<<yield_condition<<std::endl;
+    //
+
+    if (yield_condition > 0.0)
+    {
+      Real residual = std::abs(trial_stress) - _hardening_variable_two[_qp](i-3) - _yield_stress -
+                    _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+
+      Real reference_residual =
+          std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+
+      while (std::abs(residual) > _absolute_tolerance ||
+             std::abs(residual / reference_residual) > _relative_tolerance)
+      {
+        _hardening_variable_two[_qp](i-3) = computeHardeningValue(plastic_strain_increment,i);
+        Real hardening_slope = computeHardeningDerivative(plastic_strain_increment,i);
+
+        Real scalar = (std::abs(trial_stress) - _hardening_variable_two[_qp](i-1) - _yield_stress -
+                     _material_flexure[_qp](2) * plastic_strain_increment * zmidl) /
+                    (_material_flexure[_qp](2) * zmidl + hardening_slope);
+
+        plastic_strain_increment += scalar;
+
+        residual = std::abs(trial_stress) - _hardening_variable_two[_qp](i-3) - _yield_stress -
+                 _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+
+        reference_residual = std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+
+        ++iteration;
+        if (iteration > _max_its) // not converging
+          throw MooseException("PlasticBeam: Plasticity model did not converge");
+      }
+      plastic_strain_increment *= MathUtils::sign(trial_stress);
+
+      // std::cout<<"plastic strain inc = "<<plastic_strain_increment<<std::endl;
+
+      _plastic_strain_two[_qp](i-3) += plastic_strain_increment;
+      elastic_strain_increment = strain_increment - plastic_strain_increment;
+
+      std::cout<<"elastic strain_increment = "<<elastic_strain_increment<<std::endl;
+
+    }
+    _direct_stress_two[_qp](i-3) = _direct_stress_two_old[_qp](i-3) + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+
+    std::cout<<"new direct stress "<<_qp<<i<<" = "<<_direct_stress_two[_qp](i-3)<<std::endl;
+
+    moment += _direct_stress_two[_qp](i-3) * _width * zmidl * thick;
+    _stres[_qp] = moment;
+    std::cout<<"moment = "<<_stres[_qp]<<std::endl<<std::endl;
+
+    zmidl += thick/2.0;
+
+  }
+}
+
   _stres[_qp] = _stres[_qp];
   std::cout<<" final moment = "<<_stres[_qp]<<std::endl;
 
