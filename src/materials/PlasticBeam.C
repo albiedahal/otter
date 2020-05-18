@@ -31,6 +31,8 @@ PlasticBeam::validParams()
   params.addRequiredCoupledVar(
       "displacements",
       "The displacements appropriate for the simulation geometry and coordinate system");
+  params.addRequiredParam<unsigned int>("num_layers",
+      "the number of layers to consider for the plastic beam formulation.");
   params.addRequiredParam<RealGradient>("y_orientation",
                                         "Orientation of the y direction along "
                                         "with Iyy is provided. This should be "
@@ -85,6 +87,7 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _has_Ix(isParamValid("Ix")),
     _nrot(coupledComponents("rotations")),
     _ndisp(coupledComponents("displacements")),
+    _nlayers(getParam<unsigned int>("num_layers")),
     _rot_num(_nrot),
     _disp_num(_ndisp),
     _area(coupledValue("area")),
@@ -132,10 +135,10 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _relative_tolerance(parameters.get<Real>("relative_tolerance")),
     _total_stretch(declareProperty<Real>("total_stretch")),                 //curvature
     _total_stretch_old(getMaterialPropertyOld<Real>("total_stretch")),
-    _direct_stress(declareProperty<RealVectorValue>("direct_stress")),
-    _direct_stress_old(getMaterialPropertyOld<RealVectorValue>("direct_stress")),
-    _direct_stress_two(declareProperty<RealVectorValue>("direct_stress_two")),
-    _direct_stress_two_old(getMaterialPropertyOld<RealVectorValue>("direct_stress_two")),
+    _direct_stress(),
+    _direct_stress_old(),
+    _direct_stress_two(),
+    _direct_stress_two_old(),
     _plastic_strain(declareProperty<RealVectorValue>("plastic_stretch")),
     _plastic_strain_old(getMaterialPropertyOld<RealVectorValue>("plastic_stretch")),
     _plastic_strain_two(declareProperty<RealVectorValue>("plastic_stretch_two")),
@@ -181,6 +184,23 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _rot_eigenstrain_old[i] =
         &getMaterialPropertyOld<RealVectorValue>("rot_" + _eigenstrain_names[i]);
   }
+
+
+  _direct_stress.resize(_nlayers);
+  _direct_stress_old.resize(_nlayers);
+
+  // get rid of these when you're ready.
+  _direct_stress_two.resize(_nlayers);
+  _direct_stress_two_old.resize(_nlayers);
+
+
+  for (unsigned int i = 0; i < _nlayers; ++i)
+  {
+    _direct_stress[i] = &declareProperty<Real>("direct_stress" + Moose::stringify(i));
+    _direct_stress_old[i] = &getMaterialPropertyOld<Real>("direct_stress" + Moose::stringify(i));
+    _direct_stress_two[i] = &declareProperty<Real>("direct_stress_two" + Moose::stringify(i));
+    _direct_stress_two_old[i] = &getMaterialPropertyOld<Real>("direct_stress_two" + Moose::stringify(i));
+  }
 }
 
 void
@@ -189,7 +209,13 @@ PlasticBeam::initQpStatefulProperties()
   _total_stretch[_qp] = 0.0;
   _plastic_strain[_qp].zero();
   _hardening_variable[_qp].zero();
-  _direct_stress[_qp].zero();
+
+  for (unsigned int i = 0; i < _nlayers; ++i)
+  {
+    (*_direct_stress[i])[_qp] = 0.0;
+    (*_direct_stress_two[i])[_qp] = 0.0;
+  }
+
   // _direct_stress[_qp](0) = 0.0;
   // _direct_stress[_qp](1) = 0.0;
   // _direct_stress[_qp](2) = 0.0;
@@ -696,19 +722,26 @@ PlasticBeam::computeRotation()
 
 void PlasticBeam::computeQpStress()
 {
+  std::cout << "\n\n\n***************************\n";
+  std::cout << "*** computeQpStress() ***";
+  std::cout << "\n***************************\n";
+
+  std::cout << "For QP = (" << (_q_point[_qp])(0) << ", ";
+  std::cout << (_q_point[_qp])(1) << ", " << (_q_point[_qp])(2) << "):\n";
+
   Real strain_increment = _total_stretch[_qp];
   Real zmidl = -0.5 * _depth;
 
   // std::cout<<"zmidl = "<<zmidl<<std::endl;
 
-  Real thick = _depth/6.0;                        //thickness of each layer (6 layers considered)
+  Real thick = _depth/_nlayers;                        //thickness of each layer (6 layers considered)
 
   // std::cout<<"thickness = "<<thick<<std::endl;
 
 
   Real moment = 0.0;
 
-  for (unsigned int i = 0; i < 6; ++i)
+  for (unsigned int i = 0; i < _nlayers; ++i)
   {
 
     if(i<3)
@@ -717,10 +750,10 @@ void PlasticBeam::computeQpStress()
 
     zmidl += thick/2.0;
 
-    Real trial_stress = _direct_stress_old[_qp](i) + _material_flexure[_qp](2) * strain_increment * zmidl;
+    Real trial_stress = (*_direct_stress_old[i])[_qp] + _material_flexure[_qp](2) * strain_increment * zmidl;
 
     //
-    std::cout<<"direct stress old "<<_qp<<i<<" = "<<_direct_stress_old[_qp](i)<<std::endl;
+    std::cout<<"direct stress old "<<_qp<<i<<" = "<<(*_direct_stress_old[i])[_qp]<<std::endl;
     std::cout<<"trial stress = "<<trial_stress<<std::endl;
     //
 
@@ -775,11 +808,11 @@ void PlasticBeam::computeQpStress()
       std::cout<<"elastic strain_increment = "<<elastic_strain_increment<<std::endl;
 
     }
-    _direct_stress[_qp](i) = _direct_stress_old[_qp](i) + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+    (*_direct_stress[i])[_qp] = (*_direct_stress_old[i])[_qp] + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
 
-    std::cout<<"new direct stress "<<_qp<<i<<" = "<<_direct_stress[_qp](i)<<std::endl;
+    std::cout<<"new direct stress "<<_qp<<i<<" = "<<(*_direct_stress[i])[_qp]<<std::endl;
 
-    moment += _direct_stress[_qp](i) * _width * zmidl * thick;
+    moment += (*_direct_stress[i])[_qp] * _width * zmidl * thick;
     _stres[_qp] = moment;
     std::cout<<"moment = "<<_stres[_qp]<<std::endl<<std::endl;
 
@@ -789,10 +822,10 @@ void PlasticBeam::computeQpStress()
   {
     zmidl += thick/2.0;
 
-    Real trial_stress = _direct_stress_two_old[_qp](i-3) + _material_flexure[_qp](2) * strain_increment * zmidl;
+    Real trial_stress = (*_direct_stress_two_old[i-3])[_qp] + _material_flexure[_qp](2) * strain_increment * zmidl;
 
     //
-    std::cout<<"direct stress old "<<_qp<<i<<" = "<<_direct_stress_two_old[_qp](i-3)<<std::endl;
+    std::cout<<"direct stress old "<<_qp<<i<<" = "<<(*_direct_stress_two_old[i-3])[_qp]<<std::endl;
     std::cout<<"trial stress = "<<trial_stress<<std::endl;
     //
 
@@ -847,11 +880,11 @@ void PlasticBeam::computeQpStress()
       std::cout<<"elastic strain_increment = "<<elastic_strain_increment<<std::endl;
 
     }
-    _direct_stress_two[_qp](i-3) = _direct_stress_two_old[_qp](i-3) + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+    (*_direct_stress_two[i-3])[_qp] = (*_direct_stress_two_old[i-3])[_qp] + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
 
-    std::cout<<"new direct stress "<<_qp<<i<<" = "<<_direct_stress_two[_qp](i-3)<<std::endl;
+    std::cout<<"new direct stress "<<_qp<<i<<" = "<<(*_direct_stress_two[i-3])[_qp]<<std::endl;
 
-    moment += _direct_stress_two[_qp](i-3) * _width * zmidl * thick;
+    moment += (*_direct_stress_two[i-3])[_qp] * _width * zmidl * thick;
     _stres[_qp] = moment;
     std::cout<<"moment = "<<_stres[_qp]<<std::endl<<std::endl;
 

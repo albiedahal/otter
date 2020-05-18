@@ -60,6 +60,9 @@ protected:
   /// Number of coupled displacement variables
   unsigned int _ndisp;
 
+  /// number of x-sec layers to consider
+  unsigned int _nlayers;
+
   /// Variable numbers corresponding to the rotational variables
   std::vector<unsigned int> _rot_num;
 
@@ -198,10 +201,16 @@ protected:
 
   MaterialProperty<Real> & _total_stretch;
   const MaterialProperty<Real> & _total_stretch_old;
-  MaterialProperty<RealVectorValue> & _direct_stress;
-  const MaterialProperty<RealVectorValue> & _direct_stress_old;
-  MaterialProperty<RealVectorValue> & _direct_stress_two;
-  const MaterialProperty<RealVectorValue> & _direct_stress_two_old;
+
+  /// basically, instead of material property that is a vector
+  /// we're creating a vector of material properties
+  std::vector<MaterialProperty<Real> *> _direct_stress;
+  std::vector<const MaterialProperty<Real> *> _direct_stress_old;
+  // get rid of these when you're ready. Right now, we're just
+  // demonstrating that a vector of mat props works
+  std::vector<MaterialProperty<Real> *> _direct_stress_two;
+  std::vector<const MaterialProperty<Real> *> _direct_stress_two_old;
+
   MaterialProperty<RealVectorValue> & _plastic_strain;
   const MaterialProperty<RealVectorValue> & _plastic_strain_old;
   MaterialProperty<RealVectorValue> & _plastic_strain_two;

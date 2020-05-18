@@ -54,6 +54,7 @@
   []
   [strain]
     type = PlasticBeam
+    num_layers = 6
     Iy = 337500000
     Iz = 84375000
     area = 45000
