@@ -33,7 +33,7 @@
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-1000*t'
+#     function = '-100*t'
 #     variable = disp_y
 #     boundary = 'right'
 #   []
@@ -53,7 +53,8 @@
     youngs_modulus = 210
   []
   [strain]
-    type = PlasticBeam
+    type = LayeredBeam
+    num_layers = 6
     Iy = 337500000
     Iz = 84375000
     area = 45000
@@ -175,13 +176,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
-  petsc_options = '-snes_ksp_ew'
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
-  line_search = 'bt'
+  solve_type = 'PJFNK'
+  # petsc_options = '-snes_ksp_ew'
+  # petsc_options_iname = '-pc_type'
+  # petsc_options_value = 'lu'
+  # line_search = 'bt'
   dt = 1
-  end_time = 5
+  end_time = 8
   nl_abs_tol = 1e-8
 []
 

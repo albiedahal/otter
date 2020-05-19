@@ -7,7 +7,7 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "PlasticBeam.h"
+#include "LayeredBeam.h"
 #include "MooseMesh.h"
 #include "Assembly.h"
 #include "NonlinearSystem.h"
@@ -17,12 +17,12 @@
 #include "libmesh/quadrature.h"
 #include "libmesh/utility.h"
 
-registerMooseObject("TensorMechanicsApp", PlasticBeam);
+registerMooseObject("TensorMechanicsApp", LayeredBeam);
 
-defineLegacyParams(PlasticBeam);
+defineLegacyParams(LayeredBeam);
 
 InputParameters
-PlasticBeam::validParams()
+LayeredBeam::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("Compute a infinitesimal/large strain increment for the beam.");
@@ -31,6 +31,8 @@ PlasticBeam::validParams()
   params.addRequiredCoupledVar(
       "displacements",
       "The displacements appropriate for the simulation geometry and coordinate system");
+  params.addRequiredParam<unsigned int>("num_layers",
+      "the number of layers to consider for the plastic beam formulation.");
   params.addRequiredParam<RealGradient>("y_orientation",
                                         "Orientation of the y direction along "
                                         "with Iyy is provided. This should be "
@@ -38,6 +40,13 @@ PlasticBeam::validParams()
   params.addRequiredCoupledVar(
       "area",
       "Cross-section area of the beam. Can be supplied as either a number or a variable name.");
+  params.addRequiredParam<Real>(
+      "width",
+      "Width of the beam. Can be supplied as either a number or a variable name.");
+  params.addRequiredParam<Real>(
+      "depth",
+      "Depth of the beam. Can be supplied as either a number or a variable name.");
+
   params.addCoupledVar("Ay",
                        0.0,
                        "First moment of area of the beam about y axis. Can be supplied "
@@ -61,8 +70,8 @@ PlasticBeam::validParams()
   params.addParam<FunctionName>(
       "elasticity_prefactor",
       "Optional function to use as a scalar prefactor on the elasticity vector for the beam.");
-  params.addRequiredParam<Real>("yield_moment",
-                                "Yield moment after which plastic strain starts accumulating");
+  params.addRequiredParam<Real>("yield_stress",
+                                "Yield stress after which plastic strain starts accumulating");
   params.addParam<Real>("hardening_constant", 0.0, "Hardening slope");
   params.addParam<FunctionName>("hardening_function",
                                 "Engineering stress as a function of plastic strain");
@@ -73,14 +82,17 @@ PlasticBeam::validParams()
   return params;
 }
 
-PlasticBeam::PlasticBeam(const InputParameters & parameters)
+LayeredBeam::LayeredBeam(const InputParameters & parameters)
   : Material(parameters),
     _has_Ix(isParamValid("Ix")),
     _nrot(coupledComponents("rotations")),
     _ndisp(coupledComponents("displacements")),
+    _nlayers(getParam<unsigned int>("num_layers")),
     _rot_num(_nrot),
     _disp_num(_ndisp),
     _area(coupledValue("area")),
+    _width(getParam<Real>("width")),
+    _depth(getParam<Real>("depth")),
     _Ay(coupledValue("Ay")),
     _Az(coupledValue("Az")),
     _Iy(coupledValue("Iy")),
@@ -115,7 +127,7 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _effective_stiffness(declareProperty<Real>("effective_stiffness")),
     _prefactor_function(isParamValid("elasticity_prefactor") ? &getFunction("elasticity_prefactor")
                                                              : nullptr),
-    _yield_moment(getParam<Real>("yield_moment")), // Read from input file
+    _yield_stress(getParam<Real>("yield_stress")), // Read from input file
     _hardening_constant(getParam<Real>("hardening_constant")),
     _hardening_function(isParamValid("hardening_function") ? &getFunction("hardening_function")
                                                            : NULL),
@@ -123,18 +135,22 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _relative_tolerance(parameters.get<Real>("relative_tolerance")),
     _total_stretch(declareProperty<Real>("total_stretch")),                 //curvature
     _total_stretch_old(getMaterialPropertyOld<Real>("total_stretch")),
-    _plastic_strain(declareProperty<Real>("plastic_stretch")),
-    _plastic_strain_old(getMaterialPropertyOld<Real>("plastic_stretch")),
+    _direct_stress(),
+    _direct_stress_old(),
+    _plastic_strain(),
+    _plastic_strain_old(),
+    _stres(declareProperty<Real>("stress_resultant")),
+    _stres_old(getMaterialPropertyOld<Real>("stress_resultant")),
     _moment_old(getMaterialPropertyOld<RealVectorValue>("moments")),
     _material_flexure(getMaterialPropertyByName<RealVectorValue>("material_flexure")),
-    _hardening_variable(declareProperty<Real>("hardening_variable")),
-    _hardening_variable_old(getMaterialPropertyOld<Real>("hardening_variable")),
+    _hardening_variable(),
+    _hardening_variable_old(),
     _max_its(1000)
 
 {
   // Checking for consistency between length of the provided displacements and rotations vector
   if (_ndisp != _nrot)
-    mooseError("PlasticBeam: The number of variables supplied in 'displacements' "
+    mooseError("LayeredBeam: The number of variables supplied in 'displacements' "
                "and 'rotations' must match.");
 
   // fetch coupled variables and gradients (as stateful properties if necessary)
@@ -148,7 +164,7 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
   }
 
   if (_large_strain && (_Ay[0] > 0.0 || _Ay[1] > 0.0 || _Az[0] > 0.0 || _Az[1] > 0.0))
-    mooseError("PlasticBeam: Large strain calculation does not currently "
+    mooseError("LayeredBeam: Large strain calculation does not currently "
                "support asymmetric beam configurations with non-zero first or third moments of "
                "area.");
 
@@ -161,14 +177,40 @@ PlasticBeam::PlasticBeam(const InputParameters & parameters)
     _rot_eigenstrain_old[i] =
         &getMaterialPropertyOld<RealVectorValue>("rot_" + _eigenstrain_names[i]);
   }
+
+
+  _direct_stress.resize(_nlayers);
+  _direct_stress_old.resize(_nlayers);
+  _plastic_strain.resize(_nlayers);
+  _plastic_strain_old.resize(_nlayers);
+  _hardening_variable.resize(_nlayers);
+  _hardening_variable_old.resize(_nlayers);
+
+  for (unsigned int i = 0; i < _nlayers; ++i)
+  {
+    _direct_stress[i] = &declareProperty<Real>("direct_stress" + Moose::stringify(i));
+    _direct_stress_old[i] = &getMaterialPropertyOld<Real>("direct_stress" + Moose::stringify(i));
+    _plastic_strain[i] = &declareProperty<Real>("plastic_strain" + Moose::stringify(i));
+    _plastic_strain_old[i] = &getMaterialPropertyOld<Real>("plastic_strain" + Moose::stringify(i));
+    _hardening_variable[i] = &declareProperty<Real>("hardening_variable" + Moose::stringify(i));
+    _hardening_variable_old[i] = &getMaterialPropertyOld<Real>("hardening_variable" + Moose::stringify(i));
+
+  }
 }
 
 void
-PlasticBeam::initQpStatefulProperties()
+LayeredBeam::initQpStatefulProperties()
 {
   _total_stretch[_qp] = 0.0;
-  _plastic_strain[_qp] = 0.0;
-  _hardening_variable[_qp] = 0.0;
+
+  for (unsigned int i = 0; i < _nlayers; ++i)
+  {
+    (*_direct_stress[i])[_qp] = 0.0;
+    (*_plastic_strain[i])[_qp] = 0.0;
+    (*_hardening_variable[i])[_qp] = 0.0;
+  }
+
+  _stres[_qp] = 0.0;
 
   // compute initial orientation of the beam for calculating initial rotation matrix
   const std::vector<RealGradient> * orientation =
@@ -182,7 +224,7 @@ PlasticBeam::initQpStatefulProperties()
              x_orientation(2) * y_orientation(2);
 
   if (std::abs(sum) > 1e-4)
-    mooseError("PlasticBeam: y_orientation should be perpendicular to "
+    mooseError("LayeredBeam: y_orientation should be perpendicular to "
                "the axis of the beam.");
 
   // Calculate z orientation as a cross product of the x and y orientations
@@ -210,9 +252,8 @@ PlasticBeam::initQpStatefulProperties()
 }
 
 void
-PlasticBeam::computeProperties()
+LayeredBeam::computeProperties()
 {
-
   // fetch the two end nodes for current element
   std::vector<const Node *> node;
   for (unsigned int i = 0; i < 2; ++i)
@@ -263,7 +304,7 @@ PlasticBeam::computeProperties()
 }
 
 void
-PlasticBeam::computeQpStrain()
+LayeredBeam::computeQpStrain()
 {
   const Real A_avg = (_area[0] + _area[1]) / 2.0;
   const Real Iz_avg = (_Iz[0] + _Iz[1]) / 2.0;
@@ -282,10 +323,14 @@ PlasticBeam::computeQpStrain()
   _grad_rot_0_local_t = _total_rotation[0] * grad_rot_0;
   _avg_rot_local_t = _total_rotation[0] * avg_rot;
 
-  //
-  // std::cout<<"rot 0 ="<<_rot0<<" rot 1 ="<<_rot1<<std::endl;
+
+  std::cout<<"rot 0 ="<<_rot0<<" rot 1 ="<<_rot1<<std::endl;
   _total_stretch[_qp] = _grad_rot_0_local_t(2);
+  // std::cout<<"curvature vector = "<<_grad_rot_0_local_t<<std::endl;
+
   computeQpStress();
+  // std::cout<<"curvature = "<<_grad_rot_0_local_t(2)<<std::endl;
+  //
 
   // displacement at any location on beam in local coordinate system at t
   // u_1 = u_n1 - rot_3 * y + rot_2 * z
@@ -384,7 +429,7 @@ PlasticBeam::computeQpStrain()
 }
 
 void
-PlasticBeam::computeStiffnessMatrix()
+LayeredBeam::computeStiffnessMatrix()
 {
   const Real youngs_modulus = _material_stiffness[0](0);
   const Real shear_modulus = _material_stiffness[0](1);
@@ -653,81 +698,129 @@ PlasticBeam::computeStiffnessMatrix()
 }
 
 void
-PlasticBeam::computeRotation()
+LayeredBeam::computeRotation()
 {
   _total_rotation[0] = _original_local_config;
 }
 
-//
-void PlasticBeam::computeQpStress()
+void LayeredBeam::computeQpStress()
 {
+  std::cout << "\n\n\n***************************\n";
+  std::cout << "*** computeQpStress() ***";
+  std::cout << "\n***************************\n";
+
+  std::cout << "For QP = (" << (_q_point[_qp])(0) << ", ";
+  std::cout << (_q_point[_qp])(1) << ", " << (_q_point[_qp])(2) << "):\n";
+
   Real strain_increment = _total_stretch[_qp];
-  Real trial_stress = _moment_old[_qp](2) + _material_flexure[_qp](2) *_Iy[_qp]* strain_increment;
+  Real zmidl = -0.5 * _depth;
 
-  _hardening_variable[_qp] = _hardening_variable_old[_qp];
-  _plastic_strain[_qp] = _plastic_strain_old[_qp];
+  // std::cout<<"zmidl = "<<zmidl<<std::endl;
 
-  Real yield_condition = std::abs(trial_stress) - _hardening_variable[_qp] - _yield_moment;
-  Real iteration = 0;
-  Real plastic_strain_increment = 0.0;
-  Real elastic_strain_increment = strain_increment;
+  Real thick = _depth/_nlayers;                        //thickness of each layer
 
-  if (yield_condition > 0.0)
+  // std::cout<<"thickness = "<<thick<<std::endl;
+
+
+  Real moment = 0.0;
+
+  for (unsigned int i = 0; i < _nlayers; ++i)
   {
-    Real residual = std::abs(trial_stress) - _hardening_variable[_qp] - _yield_moment -
-                    _material_flexure[_qp](2) *_Iy[_qp] * plastic_strain_increment;
+    // std::cout<<"integration layer = "<<i<<std::endl;
 
-    Real reference_residual =
-        std::abs(trial_stress) - _material_flexure[_qp](2) *_Iy[_qp] * plastic_strain_increment;
+    zmidl += thick/2.0;
 
-    while (std::abs(residual) > _absolute_tolerance ||
-           std::abs(residual / reference_residual) > _relative_tolerance)
+    Real trial_stress = (*_direct_stress_old[i])[_qp] + _material_flexure[_qp](2) * strain_increment * zmidl;
+
+    //
+    std::cout<<"direct stress old "<<_qp<<i<<" = "<<(*_direct_stress_old[i])[_qp]<<std::endl;
+    std::cout<<"trial stress = "<<trial_stress<<std::endl;
+    //
+
+    (*_hardening_variable[i])[_qp] = (*_hardening_variable_old[i])[_qp];
+    (*_plastic_strain[i])[_qp] = (*_plastic_strain_old[i])[_qp];
+
+    Real yield_condition = std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress;
+    Real iteration = 0;
+    Real plastic_strain_increment = 0.0;
+    Real elastic_strain_increment = strain_increment;
+
+    //
+    std::cout<<"yield condition = "<<yield_condition<<std::endl;
+    //
+
+    if (yield_condition > 0.0)
     {
-      _hardening_variable[_qp] = computeHardeningValue(plastic_strain_increment);
-      Real hardening_slope = computeHardeningDerivative(plastic_strain_increment);
+      Real residual = std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress -
+                    _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
 
-      Real scalar = (std::abs(trial_stress) - _hardening_variable[_qp] - _yield_moment -
-                     _material_flexure[_qp](2) *_Iy[_qp] * plastic_strain_increment) /
-                    (_material_flexure[_qp](2) *_Iy[_qp] + hardening_slope);
+      Real reference_residual =
+          std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
 
-      plastic_strain_increment += scalar;
+      while (std::abs(residual) > _absolute_tolerance ||
+             std::abs(residual / reference_residual) > _relative_tolerance)
+      {
+        (*_hardening_variable[i])[_qp] = computeHardeningValue(plastic_strain_increment,i);
+        Real hardening_slope = computeHardeningDerivative(plastic_strain_increment,i);
 
-      residual = std::abs(trial_stress) - _hardening_variable[_qp] - _yield_moment -
-                 _material_flexure[_qp](2) *_Iy[_qp] * plastic_strain_increment;
+        Real scalar = (std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress -
+                     _material_flexure[_qp](2) * plastic_strain_increment * zmidl) /
+                    (_material_flexure[_qp](2) * zmidl + hardening_slope);
 
-      reference_residual = std::abs(trial_stress) - _material_flexure[_qp](2) *_Iy[_qp] * plastic_strain_increment;
+        plastic_strain_increment += scalar;
 
-      ++iteration;
-      if (iteration > _max_its) // not converging
-        throw MooseException("PlasticBeam: Plasticity model did not converge");
+        residual = std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress -
+                 _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+
+        reference_residual = std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+
+        ++iteration;
+        if (iteration > _max_its) // not converging
+          throw MooseException("LayeredBeam: Plasticity model did not converge");
+      }
+      plastic_strain_increment *= MathUtils::sign(trial_stress);
+
+      // std::cout<<"plastic strain inc = "<<plastic_strain_increment<<std::endl;
+
+      (*_plastic_strain[i])[_qp] += plastic_strain_increment;
+      elastic_strain_increment = strain_increment - plastic_strain_increment;
+
+      std::cout<<"elastic strain_increment = "<<elastic_strain_increment<<std::endl;
+
     }
-    plastic_strain_increment *= MathUtils::sign(trial_stress);
-    _plastic_strain[_qp] += plastic_strain_increment;
-    elastic_strain_increment = strain_increment - plastic_strain_increment;
+    (*_direct_stress[i])[_qp] = (*_direct_stress_old[i])[_qp] + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+
+    std::cout<<"new direct stress "<<_qp<<i<<" = "<<(*_direct_stress[i])[_qp]<<std::endl;
+
+    moment += (*_direct_stress[i])[_qp] * _width * zmidl * thick;
+    _stres[_qp] = moment;
+    std::cout<<"moment = "<<_stres[_qp]<<std::endl<<std::endl;
+
+    zmidl += thick/2.0;
   }
-  _grad_rot_0_local_t(2)= elastic_strain_increment;
-  // _moment[_qp] = _moment_old[_qp] + _material_flexure[_qp](2) *_Iz[_qp] * elastic_strain_increment;
+  _stres[_qp] = _stres[_qp];
+  std::cout<<" final moment = "<<_stres[_qp]<<std::endl;
 }
 
 Real
-PlasticBeam::computeHardeningValue(Real scalar)
+LayeredBeam::computeHardeningValue(Real scalar, Real j)
 {
   if (_hardening_function)
   {
-    const Real strain_old = _plastic_strain_old[_qp];
+    const Real strain_old = (*_plastic_strain_old[j])[_qp];
     const Point p;
 
-    return _hardening_function->value(std::abs(strain_old) + scalar, p) - _yield_moment;
+    return _hardening_function->value(std::abs(strain_old) + scalar, p) - _yield_stress;
   }
 
-  return _hardening_variable_old[_qp] + _hardening_constant * scalar;
+  return (*_hardening_variable_old[j])[_qp] + _hardening_constant * scalar;
 }
 
-Real PlasticBeam::computeHardeningDerivative(Real /*scalar*/)
+Real LayeredBeam::computeHardeningDerivative(Real scalar, Real j)
 {
   if (_hardening_function)
   {
-    const Real strain_old = _plastic_strain_old[_qp];
+    const Real strain_old = (*_plastic_strain_old[j])[_qp];
     const Point p;
 
     return _hardening_function->timeDerivative(std::abs(strain_old), p);

@@ -13,23 +13,23 @@
 #include "RankTwoTensor.h"
 
 /**
- * PlasticBeam defines a displacement and rotation strain increment and rotation
+ * LayeredBeam defines a displacement and rotation strain increment and rotation
  * increment (=1), for small strains.
  */
 
 // Forward Declarations
-class PlasticBeam;
+class LayeredBeam;
 class Function;
 
 template <>
-InputParameters validParams<PlasticBeam>();
+InputParameters validParams<LayeredBeam>();
 
-class PlasticBeam : public Material
+class LayeredBeam : public Material
 {
 public:
   static InputParameters validParams();
 
-  PlasticBeam(const InputParameters & parameters);
+  LayeredBeam(const InputParameters & parameters);
 
   virtual void computeProperties() override;
 
@@ -47,8 +47,8 @@ protected:
 
   //
   void computeQpStress();
-  virtual Real computeHardeningValue(Real scalar);
-  virtual Real computeHardeningDerivative(Real scalar);
+  virtual Real computeHardeningValue(Real scalar, Real j);
+  virtual Real computeHardeningDerivative(Real scalar, Real j);
 
 
   /// Booleans for validity of params
@@ -60,6 +60,9 @@ protected:
   /// Number of coupled displacement variables
   unsigned int _ndisp;
 
+  /// number of x-sec layers to consider
+  unsigned int _nlayers;
+
   /// Variable numbers corresponding to the rotational variables
   std::vector<unsigned int> _rot_num;
 
@@ -68,6 +71,12 @@ protected:
 
   /// Coupled variable for the beam cross-sectional area
   const VariableValue & _area;
+
+  /// Coupled variable for the beam width
+  const Real & _width;
+
+  /// Coupled variable for the beam depth
+  const Real & _depth;
 
   /// Coupled variable for the first moment of area in y direction, i.e., integral of y*dA over the cross-section
   const VariableValue & _Ay;
@@ -182,7 +191,7 @@ protected:
   const Function * const _prefactor_function;
 
 
-  Real _yield_moment;
+  Real _yield_stress;
   const Real _hardening_constant;
   const Function * _hardening_function;
 
@@ -192,16 +201,20 @@ protected:
 
   MaterialProperty<Real> & _total_stretch;
   const MaterialProperty<Real> & _total_stretch_old;
-  MaterialProperty<Real> & _plastic_strain;
-  const MaterialProperty<Real> & _plastic_strain_old;
+
+  /// basically, instead of material property that is a vector
+  /// we're creating a vector of material properties
+  std::vector<MaterialProperty<Real> *> _direct_stress;
+  std::vector<const MaterialProperty<Real> *> _direct_stress_old;
+  std::vector<MaterialProperty<Real> *> _plastic_strain;
+  std::vector<const MaterialProperty<Real> *> _plastic_strain_old;
+  MaterialProperty<Real> & _stres;
+  const MaterialProperty<Real> & _stres_old;
   const MaterialProperty<RealVectorValue> & _moment_old;
   const MaterialProperty<RealVectorValue> & _material_flexure;
-
-  MaterialProperty<Real> & _hardening_variable;
-  const MaterialProperty<Real> & _hardening_variable_old;
+  std::vector<MaterialProperty<Real> *> _hardening_variable;
+  std::vector<const MaterialProperty<Real> *> _hardening_variable_old;
 
   /// maximum no. of iterations
   const unsigned int _max_its;
-
-
 };

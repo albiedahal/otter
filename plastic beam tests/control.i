@@ -10,7 +10,7 @@
   [beam]
   type = GeneratedMeshGenerator
   dim = 1
-  nx = 6
+  nx = 10
   xmin = 0
   xmax = 3000
   []
@@ -38,14 +38,14 @@
 []
 
 
-# [NodalKernels]
-#   [force_y2]
-#     type = UserForcingFunctionNodalKernel
-#     function = '-1000*t'
-#     variable = disp_y
-#     boundary = 'right'
-#   []
-# []
+[NodalKernels]
+  [force_y2]
+    type = UserForcingFunctionNodalKernel
+    function = '-300*t'
+    variable = disp_y
+    boundary = 'mid'
+  []
+[]
 
 # [Functions]
 #   [load]
@@ -154,12 +154,12 @@
   #   boundary = right
   #   value = 0
   # []
-  [load]
-    type = FunctionDirichletBC
-    variable = disp_y
-    boundary = mid
-    function = '5*t'
-  [../]
+  # [load]
+  #   type = FunctionDirichletBC
+  #   variable = disp_y
+  #   boundary = mid
+  #   function = '5*t'
+  # [../]
 []
 
 [Kernels]
@@ -225,7 +225,7 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 2
+  end_time = 5
   nl_abs_tol = 1e-8
 []
 

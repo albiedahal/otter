@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 5
+  nx = 1
   xmin = 0
   xmax = 1
 []
@@ -61,7 +61,7 @@
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
     yield_moment = '1100'
-    hardening_constant = '20000'
+    hardening_constant = '0'
   []
   [stress]
     type = ComputeBeamResultants
@@ -112,7 +112,7 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = '0.001*t'
+    function = '0.0005*t'
   [../]
 []
 
@@ -178,8 +178,8 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 0.5
-  end_time = 2.5
+  dt = 1
+  end_time = 5
   nl_abs_tol = 1e-8
 []
 

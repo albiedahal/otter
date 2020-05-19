@@ -60,4 +60,6 @@ protected:
   const MaterialProperty<RealVectorValue> & _moment_old;
 
   const MaterialProperty<Real> & _stres;
+//  const MaterialProperty<Real> & _stres2;
+
 };
