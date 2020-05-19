@@ -53,11 +53,7 @@
     youngs_modulus = 210
   []
   [strain]
-<<<<<<< HEAD
     type = LayeredBeam
-=======
-    type = PlasticBeam
->>>>>>> refs/remotes/origin/master
     num_layers = 6
     Iy = 337500000
     Iz = 84375000
