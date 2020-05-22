@@ -61,18 +61,22 @@
     youngs_modulus = 210
   []
   [strain]
-    type = PlasticBeam
-    Iz = 84375000
-    Iy = 337500000
-    area = 45000
+    type = LayeredBeam
+    Iz = 26680000
+    Iy = 68480000
+    area = 9600
+    num_layers = 6
+    depth = 200
+    width = '200 10 10 10 10 200'
+    thickness = '20 40 40 40 40 20'
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    yield_moment = '843750'
+    yield_stress = '0.25'
     hardening_constant = '0'
   []
   [stress]
-    type = ComputeBeamResultants
+    type = ComputeBeamResultantsl
     block = 0
     outputs = exodus
     output_properties = 'forces moments'
@@ -98,24 +102,24 @@
     boundary = left
     value = 0
   []
-  # [fixr1]
-  #   type = DirichletBC
-  #   variable = rot_x
-  #   boundary = left
-  #   value = 0
-  # []
-  # [fixr2]
-  #   type = DirichletBC
-  #   variable = rot_y
-  #   boundary = left
-  #   value = 0
-  # []
-  # [fixr3]
-  #   type = DirichletBC
-  #   variable = rot_z
-  #   boundary = left
-  #   value = 0
-  # []
+  [fixr1]
+    type = DirichletBC
+    variable = rot_x
+    boundary = left
+    value = 0
+  []
+  [fixr2]
+    type = DirichletBC
+    variable = rot_y
+    boundary = left
+    value = 0
+  []
+  [fixr3]
+    type = DirichletBC
+    variable = rot_z
+    boundary = left
+    value = 0
+  []
   [fixx2]
     type = DirichletBC
     variable = disp_x
@@ -134,24 +138,24 @@
     boundary = right
     value = 0
   []
-  # [fixr21]
-  #   type = DirichletBC
-  #   variable = rot_x
-  #   boundary = right
-  #   value = 0
-  # []
-  # [fixr22]
-  #   type = DirichletBC
-  #   variable = rot_y
-  #   boundary = right
-  #   value = 0
-  # []
-  # [fixr23]
-  #   type = DirichletBC
-  #   variable = rot_z
-  #   boundary = right
-  #   value = 0
-  # []
+  [fixr21]
+    type = DirichletBC
+    variable = rot_x
+    boundary = right
+    value = 0
+  []
+  [fixr22]
+    type = DirichletBC
+    variable = rot_y
+    boundary = right
+    value = 0
+  []
+  [fixr23]
+    type = DirichletBC
+    variable = rot_z
+    boundary = right
+    value = 0
+  []
   [load]
     type = FunctionDirichletBC
     variable = disp_y
@@ -162,42 +166,42 @@
 
 [Kernels]
   [solid_disp_x]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_x
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 0
   []
   [solid_disp_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 1
   []
   [solid_disp_z]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_z
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 2
   []
   [solid_rot_x]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_x
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 3
   []
   [solid_rot_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 4
   []
   [solid_rot_z]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_z
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
@@ -223,7 +227,7 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 8
+  end_time = 5
   nl_abs_tol = 1e-8
 []
 

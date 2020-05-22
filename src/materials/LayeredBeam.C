@@ -40,12 +40,17 @@ LayeredBeam::validParams()
   params.addRequiredCoupledVar(
       "area",
       "Cross-section area of the beam. Can be supplied as either a number or a variable name.");
-  params.addRequiredParam<Real>(
-      "width",
-      "Width of the beam. Can be supplied as either a number or a variable name.");
+
   params.addRequiredParam<Real>(
       "depth",
-      "Depth of the beam. Can be supplied as either a number or a variable name.");
+      "depth of the beam. Can be supplied as either a number or a variable name.");
+
+  params.addRequiredParam<std::vector<Real>>(
+      "width",
+      "Width of the beam layers. Can be supplied as a vector.");
+  params.addRequiredParam<std::vector<Real>>(
+      "thickness",
+      "thickness of the beam layers. Can be supplied as a vector.");
 
   params.addCoupledVar("Ay",
                        0.0,
@@ -91,8 +96,9 @@ LayeredBeam::LayeredBeam(const InputParameters & parameters)
     _rot_num(_nrot),
     _disp_num(_ndisp),
     _area(coupledValue("area")),
-    _width(getParam<Real>("width")),
     _depth(getParam<Real>("depth")),
+    _width(getParam<std::vector<Real>>("width")),
+    _thick(getParam<std::vector<Real>>("thickness")),
     _Ay(coupledValue("Ay")),
     _Az(coupledValue("Az")),
     _Iy(coupledValue("Iy")),
@@ -717,7 +723,7 @@ void LayeredBeam::computeQpStress()
 
   // std::cout<<"zmidl = "<<zmidl<<std::endl;
 
-  Real thick = _depth/_nlayers;                        //thickness of each layer
+  // Real thick = _depth/_nlayers;                        //thickness of each layer
 
   // std::cout<<"thickness = "<<thick<<std::endl;
 
@@ -728,7 +734,7 @@ void LayeredBeam::computeQpStress()
   {
     // std::cout<<"integration layer = "<<i<<std::endl;
 
-    zmidl += thick/2.0;
+    zmidl += _thick[i]/2.0;
 
     Real trial_stress = (*_direct_stress_old[i])[_qp] + _material_flexure[_qp](2) * strain_increment * zmidl;
 
@@ -792,11 +798,11 @@ void LayeredBeam::computeQpStress()
 
     std::cout<<"new direct stress "<<_qp<<i<<" = "<<(*_direct_stress[i])[_qp]<<std::endl;
 
-    moment += (*_direct_stress[i])[_qp] * _width * zmidl * thick;
+    moment += (*_direct_stress[i])[_qp] * _width[i] * zmidl * _thick[i];
     _stres[_qp] = moment;
     std::cout<<"moment = "<<_stres[_qp]<<std::endl<<std::endl;
 
-    zmidl += thick/2.0;
+    zmidl += _thick[i]/2.0;
   }
   _stres[_qp] = _stres[_qp];
   std::cout<<" final moment = "<<_stres[_qp]<<std::endl;

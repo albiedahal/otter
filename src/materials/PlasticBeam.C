@@ -230,6 +230,9 @@ PlasticBeam::computeProperties()
   const NumericVector<Number> & sol = *_nonlinear_sys.currentSolution();
   const NumericVector<Number> & sol_old = _nonlinear_sys.solutionOld();
 
+  std::cout<<sol;
+  std::cout<<sol_old;
+
   for (unsigned int i = 0; i < _ndisp; ++i)
   {
     _soln_disp_index_0[i] = node[0]->dof_number(_nonlinear_sys.number(), _disp_num[i], 0);

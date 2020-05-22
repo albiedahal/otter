@@ -72,11 +72,14 @@ protected:
   /// Coupled variable for the beam cross-sectional area
   const VariableValue & _area;
 
-  /// Coupled variable for the beam width
-  const Real & _width;
-
   /// Coupled variable for the beam depth
   const Real & _depth;
+
+  /// Coupled variable for the beam width
+  const std::vector<Real> & _width;
+
+  /// Coupled variable for the beam depth
+  const std::vector<Real> & _thick;
 
   /// Coupled variable for the first moment of area in y direction, i.e., integral of y*dA over the cross-section
   const VariableValue & _Ay;

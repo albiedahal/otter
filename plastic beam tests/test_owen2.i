@@ -61,7 +61,7 @@
     youngs_modulus = 210
   []
   [strain]
-    type = ComputeIncrementalBeamStrainl
+    type = PlasticBeam
     Iz = 26680000
     Iy = 68480000
     area = 9600
@@ -72,7 +72,7 @@
     hardening_constant = '0'
   []
   [stress]
-    type = ComputeBeamResultantsl
+    type = ComputeBeamResultants
     block = 0
     outputs = exodus
     output_properties = 'forces moments'
@@ -162,42 +162,42 @@
 
 [Kernels]
   [solid_disp_x]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_x
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 0
   []
   [solid_disp_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 1
   []
   [solid_disp_z]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_z
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 2
   []
   [solid_rot_x]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_x
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 3
   []
   [solid_rot_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 4
   []
   [solid_rot_z]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_z
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
@@ -217,13 +217,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
+  solve_type = 'PJFNK'
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 4
+  end_time = 5
   nl_abs_tol = 1e-8
 []
 
