@@ -12,24 +12,19 @@
 #include "Material.h"
 #include "RankTwoTensor.h"
 
-/**
- * LayeredBeam defines a displacement and rotation strain increment and rotation
- * increment (=1), for small strains.
- */
-
 // Forward Declarations
-class LayeredBeam;
 class Function;
 
-template <>
-InputParameters validParams<LayeredBeam>();
-
-class LayeredBeam : public Material
+/**
+ * ComputeIncrementalBeamStrainl defines a displacement and rotation strain increment and rotation
+ * increment (=1), for small strains.
+ */
+class ComputeIncrementalBeamStrainl : public Material
 {
 public:
   static InputParameters validParams();
 
-  LayeredBeam(const InputParameters & parameters);
+  ComputeIncrementalBeamStrainl(const InputParameters & parameters);
 
   virtual void computeProperties() override;
 
@@ -45,12 +40,6 @@ protected:
   /// Computes the rotation matrix at time t. For small rotation scenarios, the rotation matrix at time t is same as the intiial rotation matrix
   virtual void computeRotation();
 
-  //
-  void computeQpStress();
-  virtual Real computeHardeningValue(Real scalar, Real j);
-  virtual Real computeHardeningDerivative(Real scalar, Real j);
-
-
   /// Booleans for validity of params
   const bool _has_Ix;
 
@@ -60,9 +49,6 @@ protected:
   /// Number of coupled displacement variables
   unsigned int _ndisp;
 
-  /// number of x-sec layers to consider
-  unsigned int _nlayers;
-
   /// Variable numbers corresponding to the rotational variables
   std::vector<unsigned int> _rot_num;
 
@@ -71,15 +57,6 @@ protected:
 
   /// Coupled variable for the beam cross-sectional area
   const VariableValue & _area;
-
-  /// Coupled variable for the beam depth
-  const Real & _depth;
-
-  /// Coupled variable for the beam width
-  const std::vector<Real> & _width;
-
-  /// Coupled variable for the beam depth
-  const std::vector<Real> & _thick;
 
   /// Coupled variable for the first moment of area in y direction, i.e., integral of y*dA over the cross-section
   const VariableValue & _Ay;
@@ -190,34 +167,7 @@ protected:
 
   /// Psuedo stiffness for critical time step computation
   MaterialProperty<Real> & _effective_stiffness;
+
   /// Prefactor function to multiply the elasticity tensor with
   const Function * const _prefactor_function;
-
-
-  Real _yield_stress;
-  const Real _hardening_constant;
-  const Function * _hardening_function;
-
-  /// convergence tolerance
-  Real _absolute_tolerance;
-  Real _relative_tolerance;
-
-  MaterialProperty<Real> & _total_stretch;
-  const MaterialProperty<Real> & _total_stretch_old;
-
-  /// basically, instead of material property that is a vector
-  /// we're creating a vector of material properties
-  std::vector<MaterialProperty<Real> *> _direct_stress;
-  std::vector<const MaterialProperty<Real> *> _direct_stress_old;
-  std::vector<MaterialProperty<Real> *> _plastic_strain;
-  std::vector<const MaterialProperty<Real> *> _plastic_strain_old;
-  MaterialProperty<Real> & _stres;
-  const MaterialProperty<Real> & _stres_old;
-  const MaterialProperty<RealVectorValue> & _moment_old;
-  const MaterialProperty<RealVectorValue> & _material_flexure;
-  std::vector<MaterialProperty<Real> *> _hardening_variable;
-  std::vector<const MaterialProperty<Real> *> _hardening_variable_old;
-
-  /// maximum no. of iterations
-  const unsigned int _max_its;
 };

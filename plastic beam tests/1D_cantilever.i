@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 4
+  nx = 2
   xmin = 0
   xmax = 1
 []
@@ -29,14 +29,14 @@
   []
 []
 
-[NodalKernels]
-  [force_y2]
-    type = UserForcingFunctionNodalKernel
-    function = '-1000*t'
-    variable = disp_y
-    boundary = 'right'
-  []
-[]
+# [NodalKernels]
+#   [force_y2]
+#     type = UserForcingFunctionNodalKernel
+#     function = '-1000*t'
+#     variable = disp_y
+#     boundary = 'right'
+#   []
+# []
 
 # [Functions]
 #   [load]
@@ -52,7 +52,7 @@
     youngs_modulus = 7.310e10
   []
   [strain]
-    type = ComputeIncrementalBeamStrain
+    type = ComputeIncrementalBeamStrainl
     Iy = 8.33e-6
     Iz = 8.33e-6
     area = 0.01
@@ -105,6 +105,12 @@
     boundary = left
     value = 0
   []
+  [load]
+    type = FunctionDirichletBC
+    variable = disp_y
+    boundary = right
+    function = '0.0005*t'
+  [../]
 []
 
 [Kernels]
@@ -161,13 +167,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'PJFNK'
-  petsc_options = '-snes_ksp_ew'
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
-  line_search = 'none'
-  dt = 0.5
-  num_steps = 10
+  solve_type = 'NEWTON'
+  # petsc_options = '-snes_ksp_ew'
+  # petsc_options_iname = '-pc_type'
+  # petsc_options_value = 'lu'
+  # line_search = 'none'
+  dt = 1
+  num_steps = 1
   nl_abs_tol = 1e-8
 []
 

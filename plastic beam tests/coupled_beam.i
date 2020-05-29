@@ -53,19 +53,21 @@
     youngs_modulus = 7.310e10
   []
   [strain]
-    type = PlasticBeam
+    type = ComputeIncrementalBeamStrainl
     Iy = 8.33e-6
     Iz = 8.33e-6
     area = 0.01
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    yield_moment = '1100'
-    hardening_constant = '0'
+    # yield_moment = '1100'
+    # hardening_constant = '0'
   []
   [stress]
-    type = ComputeBeamResultants
+    type = CoupledBeam
     block = 0
+    yield_force = '8700000000 8700000000 8700000000'
+    yield_moments = '1100 1100 1100'
     outputs = exodus
     output_properties = 'forces moments'
   []

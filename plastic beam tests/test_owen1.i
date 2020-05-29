@@ -162,42 +162,42 @@
 
 [Kernels]
   [solid_disp_x]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_x
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 0
   []
   [solid_disp_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 1
   []
   [solid_disp_z]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_z
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 2
   []
   [solid_rot_x]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_x
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 3
   []
   [solid_rot_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 4
   []
   [solid_rot_z]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = rot_z
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'

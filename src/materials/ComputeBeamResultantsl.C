@@ -34,8 +34,7 @@ ComputeBeamResultantsl::ComputeBeamResultantsl(const InputParameters & parameter
     _force_old(getMaterialPropertyOld<RealVectorValue>("forces")),
     _moment_old(getMaterialPropertyOld<RealVectorValue>("moments")),
     _stres(getMaterialPropertyByName<Real>("stress_resultant"))
-    // _stres2(getMaterialPropertyByName<Real>("stress_resultant2"))
-
+ 
 {
 }
 
@@ -56,7 +55,6 @@ ComputeBeamResultantsl::computeQpProperties()
   force_increment(2) = _material_stiffness[_qp](2) * _disp_strain_increment[_qp](2);
 
   _force[_qp] = _total_rotation[0].transpose() * force_increment + _force_old[_qp];
-  // _force[_qp](1) = _stres2[_qp];
 
   //
   std::cout<<"force from CBR ="<<_force[_qp]<<std::endl;
@@ -71,9 +69,9 @@ ComputeBeamResultantsl::computeQpProperties()
   _moment[_qp] = _total_rotation[0].transpose() * moment_increment + _moment_old[_qp];
   _moment[_qp](2) = _stres[_qp];
 
-  std::cout<<"moment old ="<<_moment_old[_qp]<<std::endl;
-  std::cout<<"stres qp ="<<_stres[_qp]<<std::endl;
-  //
+//  std::cout<<"moment old ="<<_moment_old[_qp]<<std::endl;
+//  std::cout<<"stres qp ="<<_stres[_qp]<<std::endl;
+//  //
   std::cout<<"moment from CBR ="<<_moment[_qp]<<std::endl;
   //
 

@@ -7,12 +7,20 @@
 
 
 [Mesh]
-  type = GeneratedMesh
+  [beam]
+  type = GeneratedMeshGenerator
   dim = 1
-  nx = 5
+  nx = 10
   xmin = 0
-  xmax = 1
-[]
+  xmax = 3000
+  []
+  [mid]
+  type = ExtraNodesetGenerator
+  new_boundary = mid
+  coord = '1500 0 0'
+  input = beam
+[../]
+[../]
 
 [Variables]
   [disp_x]
@@ -49,25 +57,26 @@
 [Materials]
   [elasticity]
     type = ComputeElasticityBeam
-    poissons_ratio = 0.33
-    youngs_modulus = 7.310e10
+    poissons_ratio = 0.3
+    youngs_modulus = 210
   []
   [strain]
-    type = PlasticBeam
-    Iy = 8.33e-6
-    Iz = 8.33e-6
-    area = 0.01
+    type = ComputeIncrementalBeamStrain
+    Iz = 26680000
+    Iy = 68480000
+    area = 9600
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    yield_moment = '1100'
-    hardening_constant = '0'
   []
   [stress]
-    type = ComputeBeamResultants
+    type = CoupledBeam
     block = 0
+    yield_force = '8700000000 8700000000 8700000000'
+    yield_moments = '196000 196000 196000'
     outputs = exodus
     output_properties = 'forces moments'
+    # absolute_tolerance = 1e-4
   []
 []
 
@@ -108,11 +117,47 @@
     boundary = left
     value = 0
   []
+  [fixx2]
+    type = DirichletBC
+    variable = disp_x
+    boundary = right
+    value = 0
+  []
+  [fixy2]
+    type = DirichletBC
+    variable = disp_y
+    boundary = right
+    value = 0
+  []
+  [fixz2]
+    type = DirichletBC
+    variable = disp_z
+    boundary = right
+    value = 0
+  []
+  [fixr21]
+    type = DirichletBC
+    variable = rot_x
+    boundary = right
+    value = 0
+  []
+  [fixr22]
+    type = DirichletBC
+    variable = rot_y
+    boundary = right
+    value = 0
+  []
+  [fixr23]
+    type = DirichletBC
+    variable = rot_z
+    boundary = right
+    value = 0
+  []
   [load]
     type = FunctionDirichletBC
     variable = disp_y
-    boundary = right
-    function = '0.0005*t'
+    boundary = mid
+    function = '5*t'
   [../]
 []
 
@@ -173,7 +218,7 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
+  solve_type = 'PJFNK'
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
@@ -191,7 +236,7 @@
   # []
   [disp_y]
     type = PointValue
-    point = '1 0 0'
+    point = '1500 0 0'
     variable = disp_y
   []
   [rotation]
@@ -201,22 +246,12 @@
   []
   [forces_y]
     type = PointValue
-    point = '1 0 0'
+    point = '0 0 0'
     variable = forces_y
   []
   [moments_z]
     type = PointValue
-    point = '0 0 0'
-    variable = moments_z
-  [../]
-  [moments_z2]
-    type = PointValue
-    point = '0.5 0 0'
-    variable = moments_z
-  [../]
-  [moments_z3]
-    type = PointValue
-    point = '1 0 0'
+    point = '1500 0 0'
     variable = moments_z
   [../]
   # [./moments]

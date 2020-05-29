@@ -16,11 +16,6 @@
  * CoupledBeam computes forces and moments using elasticity
  */
 
-class CoupledBeam;
-
-template <>
-InputParameters validParams<CoupledBeam>();
-
 class CoupledBeam : public Material
 {
 public:
@@ -67,12 +62,6 @@ protected:
   /// convergence tolerance
   Real _absolute_tolerance;
   Real _relative_tolerance;
-
-  /// Plastic displacements and rotation at current and previous time step
-  MaterialProperty<RealVectorValue> & _plastic_deformation;
-  const MaterialProperty<RealVectorValue> & _plastic_deformation_old;
-  MaterialProperty<RealVectorValue> & _plastic_rotation;
-  const MaterialProperty<RealVectorValue> & _plastic_rotation_old;
 
   /// Hardening variables at current and previous time step
   MaterialProperty<RealVectorValue> & _hardening_variable_force;
