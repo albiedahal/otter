@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 2
+  nx = 10
   xmin = 0
   xmax = 1
 []
@@ -29,6 +29,17 @@
   []
 []
 
+[AuxVariables]
+  [forcey]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [momentz]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+[../]
+
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
@@ -40,8 +51,9 @@
 
 # [Functions]
 #   [load]
-#     type = ConstantFunction
-#     value = -5000
+#     type = PiecewiseLinear
+#     x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
+#     y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.004 -0.008 -.00012 -0.008 -0.004 0 0.0004 0.0008 0.0012'
 #   []
 # []
 
@@ -109,7 +121,7 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = '0.0005*t'
+    function = '0.0005'
   [../]
 []
 
@@ -122,11 +134,12 @@
     component = 0
   []
   [solid_disp_y]
-    type = StressDivergenceBeam
+    type = StressDivergenceBeaml
     variable = disp_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 1
+    save_in = forcey
   []
   [solid_disp_z]
     type = StressDivergenceBeam
@@ -155,6 +168,7 @@
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 5
+    save_in = momentz
   []
 []
 
@@ -173,7 +187,7 @@
   # petsc_options_value = 'lu'
   # line_search = 'none'
   dt = 1
-  num_steps = 1
+  end_time = 1
   nl_abs_tol = 1e-8
 []
 
@@ -188,9 +202,19 @@
     point = '1 0 0'
     variable = disp_y
   []
-  [rotation]
-    type = NodalMaxValue
-    boundary = right
+  [disp_y2]
+    type = PointValue
+    point = '0.75 0 0'
+    variable = disp_y
+  []
+  [rotation1]
+    type = PointValue
+    point = '1 0 0'
+    variable = rot_z
+  []
+  [rotation2]
+    type = PointValue
+    point = '0.75 0 0'
     variable = rot_z
   []
   [moments_z1]
@@ -202,6 +226,36 @@
     type = PointValue
     point = '0.75 0 0'
     variable = moments_z
+  []
+  [forces_y1]
+    type = PointValue
+    point = '1 0 0'
+    variable = forces_y
+  []
+  [forces_y2]
+    type = PointValue
+    point = '0.75 0 0'
+    variable = forces_y
+  []
+  [res_forcey1]
+    type = PointValue
+    point = '1 0 0'
+    variable = forcey
+  []
+  [res_forcey2]
+    type = PointValue
+    point = '0.75 0 0'
+    variable = forcey
+  []
+  [res_momentz1]
+    type = PointValue
+    point = '1 0 0'
+    variable = momentz
+  []
+  [res_momentz2]
+    type = PointValue
+    point = '0 0 0'
+    variable = momentz
   []
 []
 

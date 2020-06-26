@@ -133,6 +133,8 @@ StressDivergenceBeaml::computeResidual()
       _local_re(_i) = _global_moment_res[_i](_component - 3);
   }
 
+  std::cout<<"residual = "<<_local_re<<"\n";
+
   accumulateTaggedLocalResidual();
 
   if (_has_save_in)
@@ -171,6 +173,8 @@ StressDivergenceBeaml::computeJacobian()
   // scaling factor for Rayliegh damping and HHT time integration
   if (_isDamped && _dt > 0.0)
     _local_ke *= (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt);
+
+    std::cout<<" jacobian = "<<_local_ke<<"\n";
 
   accumulateTaggedLocalMatrix();
 
@@ -262,6 +266,8 @@ StressDivergenceBeaml::computeOffDiagJacobian(MooseVariableFEBase & jvar)
     if (_isDamped && _dt > 0.0)
       _local_ke *= (1.0 + _alpha + (1.0 + _alpha) * _zeta[0] / _dt);
 
+      std::cout<<" jacobian = "<<_local_ke<<"\n";
+
     accumulateTaggedLocalMatrix();
   }
 }
@@ -316,6 +322,8 @@ StressDivergenceBeaml::computeGlobalResidual(const MaterialProperty<RealVectorVa
   //
   // std::cout<<"cGR from SDB is called"<<std::endl;
   //
+  std::cout<<"********* Residual Calculation ****************\n\n";
+
 
   RealVectorValue a;
   _force_local_t.resize(_qrule->n_points());
@@ -334,11 +342,17 @@ StressDivergenceBeaml::computeGlobalResidual(const MaterialProperty<RealVectorVa
   for (_i = 0; _i < _test.size(); ++_i)
   {
     _local_force_res[_i] = a;
+    // std::cout<<"the value of a for force = "<<_local_force_res[_i]<<"\n";
     for (unsigned int component = 0; component < 3; ++component)
     {
       for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-        _local_force_res[_i](component) +=
+        {
+          _local_force_res[_i](component) +=
             (_i == 0 ? -1 : 1) * _force_local_t[_qp](component) * 0.5;
+
+            // std::cout<<"force res for qp "<<_qp<<"= "<<_local_force_res[_i]<<std::endl;
+        }
+
     }
   }
 
@@ -361,14 +375,16 @@ StressDivergenceBeaml::computeGlobalResidual(const MaterialProperty<RealVectorVa
           _local_moment_res[_i](component - 3) +=
               (_i == 0 ? -1 : 1) * _moment_local_t[_qp](2) * 0.5 -
               _force_local_t[_qp](1) * 0.25 * _original_length[0];
+
+
+                    //
+                    // std::cout<<"moment res for qp "<<_qp<<"= "<<_local_moment_res[_i]<<std::endl;
+                    //
       }
     }
   }
 
-//
-std::cout<<"force res = "<<_local_force_res[_qp]<<std::endl;
-std::cout<<"moment res = "<<_local_moment_res[_qp]<<std::endl;
-//
+
 
   // convert residual for each variable from current beam local configuration to global
   // configuration
@@ -376,11 +392,10 @@ std::cout<<"moment res = "<<_local_moment_res[_qp]<<std::endl;
   {
     global_force_res[_i] = (*total_rotation)[0].transpose() * _local_force_res[_i];
     global_moment_res[_i] = (*total_rotation)[0].transpose() * _local_moment_res[_i];
+
+    //
+    std::cout<<"global force res = "<<global_force_res[_i]<<std::endl;
+    std::cout<<"global moment res = "<<global_moment_res[_i]<<std::endl;
+    //
   }
-
-  //
-  std::cout<<"global force res = "<<_local_force_res[_qp]<<std::endl;
-  std::cout<<"global moment res = "<<_local_moment_res[_qp]<<std::endl;
-  //
-
 }

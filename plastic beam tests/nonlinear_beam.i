@@ -7,20 +7,12 @@
 
 
 [Mesh]
-  [beam]
-  type = GeneratedMeshGenerator
+  type = GeneratedMesh
   dim = 1
-  nx = 10
+  nx = 1
   xmin = 0
-  xmax = 3000
-  []
-  [mid]
-  type = ExtraNodesetGenerator
-  new_boundary = mid
-  coord = '1500 0 0'
-  input = beam
-[../]
-[../]
+  xmax = 1
+[]
 
 [Variables]
   [disp_x]
@@ -41,44 +33,46 @@
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-1000*t'
+#     function = '-2200*t'
 #     variable = disp_y
-#     boundary = 'mid'
+#     boundary = 'right'
 #   []
 # []
 
 [Functions]
   [load]
     type = PiecewiseLinear
-    x = '0   1   2   3   4  5  6  7  8   9  10 11 12 13 14 15'
-    y = '0   4   8   12  8  4  0 -4 -8 -12  -8 -4  0  4  8 12'
+    x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
+    y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.0004 -0.0008 -.0012 -0.0008 -0.0004 0 0.0004 0.0008 0.0012'
   []
 []
 
 [Materials]
   [elasticity]
     type = ComputeElasticityBeam
-    poissons_ratio = 0.3
-    youngs_modulus = 210
+    poissons_ratio = 0.33
+    youngs_modulus = 7.310e10
   []
   [strain]
     type = ComputeIncrementalBeamStrainl
-    Iz = 84375000
-    Iy = 337500000
-    area = 45000
+    Iy = 8.33e-6
+    Iz = 8.33e-6
+    area = 0.01
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
+    # yield_moment = '1100'
+    # hardening_constant = '0'
   []
   [stress]
     type = NonlinearBeam
     block = 0
     yield_force = '8700000000 8700000000 8700000000'
-    yield_moments = '843750 843750 843750'
-    isotropic_hardening_coefficient = 0.2
+    yield_moments = '1100 1100 1100'
     outputs = exodus
+    isotropic_hardening_coefficient = 0.05
+    kinematic_hardening_coefficient = 0
     output_properties = 'forces moments'
-    # absolute_tolerance = 1e-3
   []
 []
 
@@ -101,65 +95,29 @@
     boundary = left
     value = 0
   []
-  # [fixr1]
-  #   type = DirichletBC
-  #   variable = rot_x
-  #   boundary = left
-  #   value = 0
-  # []
-  # [fixr2]
-  #   type = DirichletBC
-  #   variable = rot_y
-  #   boundary = left
-  #   value = 0
-  # []
-  # [fixr3]
-  #   type = DirichletBC
-  #   variable = rot_z
-  #   boundary = left
-  #   value = 0
-  # []
-  [fixx2]
+  [fixr1]
     type = DirichletBC
-    variable = disp_x
-    boundary = right
+    variable = rot_x
+    boundary = left
     value = 0
   []
-  [fixy2]
+  [fixr2]
     type = DirichletBC
-    variable = disp_y
-    boundary = right
+    variable = rot_y
+    boundary = left
     value = 0
   []
-  [fixz2]
+  [fixr3]
     type = DirichletBC
-    variable = disp_z
-    boundary = right
+    variable = rot_z
+    boundary = left
     value = 0
   []
-  # [fixr21]
-  #   type = DirichletBC
-  #   variable = rot_x
-  #   boundary = right
-  #   value = 0
-  # []
-  # [fixr22]
-  #   type = DirichletBC
-  #   variable = rot_y
-  #   boundary = right
-  #   value = 0
-  # []
-  # [fixr23]
-  #   type = DirichletBC
-  #   variable = rot_z
-  #   boundary = right
-  #   value = 0
-  # []
   [load]
     type = FunctionDirichletBC
     variable = disp_y
-    boundary = mid
-    # function = '5*t'
+    boundary = right
+    # function = '0.0005*t'
     function = 'load'
   [../]
 []
@@ -221,13 +179,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'PJFNK'
+  solve_type = 'NEWTON'
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 0.25
-  end_time = 3
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
@@ -239,22 +197,37 @@
   # []
   [disp_y]
     type = PointValue
-    point = '300 0 0'
+    point = '1 0 0'
     variable = disp_y
   []
-  [rotation]
+  [rotation1]
     type = NodalMaxValue
     boundary = right
     variable = rot_z
   []
+  [rotation2]
+    type = PointValue
+    point = '0.5 0 0'
+    variable = rot_z
+  []
   [forces_y]
     type = PointValue
-    point = '300 0 0'
+    point = '1 0 0'
     variable = forces_y
   []
   [moments_z]
     type = PointValue
-    point = '1500 0 0'
+    point = '0 0 0'
+    variable = moments_z
+  [../]
+  [moments_z2]
+    type = PointValue
+    point = '0.5 0 0'
+    variable = moments_z
+  [../]
+  [moments_z3]
+    type = PointValue
+    point = '1 0 0'
     variable = moments_z
   [../]
   # [./moments]

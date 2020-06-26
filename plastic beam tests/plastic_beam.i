@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 5
+  nx = 2
   xmin = 0
   xmax = 1
 []
@@ -39,12 +39,13 @@
 #   []
 # []
 
-# [Functions]
-#   [load]
-#     type = ConstantFunction
-#     value = -5000
-#   []
-# []
+[Functions]
+  [load]
+    type = PiecewiseLinear
+    x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
+    y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.0004 -0.0008 -.0012 -0.0008 -0.0004 0 0.0004 0.0008 0.0012'
+  []
+[]
 
 [Materials]
   [elasticity]
@@ -61,7 +62,7 @@
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
     yield_moment = '1100'
-    hardening_constant = '0'
+    hardening_constant = '28996.333'
   []
   [stress]
     type = ComputeBeamResultants
@@ -112,7 +113,8 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = '0.0005*t'
+    # function = '0.0005*t'
+    function = 'load'
   [../]
 []
 
@@ -178,8 +180,8 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 1
-  end_time = 5
+  dt = 0.25
+  end_time = 6
   nl_abs_tol = 1e-8
 []
 

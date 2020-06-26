@@ -47,12 +47,13 @@
 #   []
 # []
 
-# [Functions]
-#   [load]
-#     type = ConstantFunction
-#     value = -5000
-#   []
-# []
+[Functions]
+  [load]
+    type = PiecewiseLinear
+    x = '0   1   2   3   4  5  6  7  8   9  10 11 12 13 14 15'
+    y = '0   4   8   12  8  4  0 -4 -8 -12  -8 -4  0  4  8 12'
+  []
+[]
 
 [Materials]
   [elasticity]
@@ -70,10 +71,12 @@
     y_orientation = '0 1 0'
   []
   [stress]
-    type = CoupledBeam
+    type = NonlinearBeam
     block = 0
     yield_force = '8700000000 8700000000 8700000000'
     yield_moments = '196000 196000 196000'
+    isotropic_hardening_coefficient = 0.05
+    kinematic_hardening_coefficient = 0
     outputs = exodus
     output_properties = 'forces moments'
     # absolute_tolerance = 1e-4
@@ -157,7 +160,8 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = mid
-    function = '5*t'
+    # function = '5*t'
+    function = 'load'
   [../]
 []
 
@@ -224,7 +228,7 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 5
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 

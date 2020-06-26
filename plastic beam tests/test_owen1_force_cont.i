@@ -7,12 +7,20 @@
 
 
 [Mesh]
-  type = GeneratedMesh
+  [beam]
+  type = GeneratedMeshGenerator
   dim = 1
-  nx = 5
+  nx = 6
   xmin = 0
-  xmax = 1
-[]
+  xmax = 3000
+  []
+  [mid]
+  type = ExtraNodesetGenerator
+  new_boundary = mid
+  coord = '1500 0 0'
+  input = beam
+[../]
+[../]
 
 [Variables]
   [disp_x]
@@ -30,44 +38,43 @@
 []
 
 
-# [NodalKernels]
-#   [force_y2]
-#     type = UserForcingFunctionNodalKernel
-#     function = '-1000*t'
-#     variable = disp_y
-#     boundary = 'right'
-#   []
-# []
+[NodalKernels]
+  [force_y2]
+    type = UserForcingFunctionNodalKernel
+    function = 'load'
+    variable = disp_y
+    boundary = 'mid'
+  []
+[]
 
-# [Functions]
-#   [load]
-#     type = ConstantFunction
-#     value = -5000
-#   []
-# []
+[Functions]
+  [load]
+    type = PiecewiseLinear
+    x = '0 1 2 3 4 5 6'
+    y = '0 900 1800 900 0 -900 -1800'
+  []
+[]
 
 [Materials]
   [elasticity]
     type = ComputeElasticityBeam
-    poissons_ratio = 0.33
-    youngs_modulus = 7.310e10
+    poissons_ratio = 0.3
+    youngs_modulus = 210
   []
   [strain]
-    type = ComputeIncrementalBeamStrainl
-    Iy = 8.33e-6
-    Iz = 8.33e-6
-    area = 0.01
+    type = PlasticBeam
+    Iz = 84375000
+    Iy = 337500000
+    area = 45000
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    # yield_moment = '1100'
-    # hardening_constant = '0'
+    yield_moment = '843750'
+    hardening_constant = '0'
   []
   [stress]
-    type = CoupledBeam
+    type = ComputeBeamResultants
     block = 0
-    yield_force = '8700000000 8700000000 8700000000'
-    yield_moments = '1100 1100 1100'
     outputs = exodus
     output_properties = 'forces moments'
   []
@@ -92,30 +99,66 @@
     boundary = left
     value = 0
   []
-  [fixr1]
+  # [fixr1]
+  #   type = DirichletBC
+  #   variable = rot_x
+  #   boundary = left
+  #   value = 0
+  # []
+  # [fixr2]
+  #   type = DirichletBC
+  #   variable = rot_y
+  #   boundary = left
+  #   value = 0
+  # []
+  # [fixr3]
+  #   type = DirichletBC
+  #   variable = rot_z
+  #   boundary = left
+  #   value = 0
+  # []
+  [fixx2]
     type = DirichletBC
-    variable = rot_x
-    boundary = left
+    variable = disp_x
+    boundary = right
     value = 0
   []
-  [fixr2]
+  [fixy2]
     type = DirichletBC
-    variable = rot_y
-    boundary = left
-    value = 0
-  []
-  [fixr3]
-    type = DirichletBC
-    variable = rot_z
-    boundary = left
-    value = 0
-  []
-  [load]
-    type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = '0.0005*t'
-  [../]
+    value = 0
+  []
+  [fixz2]
+    type = DirichletBC
+    variable = disp_z
+    boundary = right
+    value = 0
+  []
+  # [fixr21]
+  #   type = DirichletBC
+  #   variable = rot_x
+  #   boundary = right
+  #   value = 0
+  # []
+  # [fixr22]
+  #   type = DirichletBC
+  #   variable = rot_y
+  #   boundary = right
+  #   value = 0
+  # []
+  # [fixr23]
+  #   type = DirichletBC
+  #   variable = rot_z
+  #   boundary = right
+  #   value = 0
+  # []
+  # [load]
+  #   type = FunctionDirichletBC
+  #   variable = disp_y
+  #   boundary = mid
+  #   function = '5*t'
+  # [../]
 []
 
 [Kernels]
@@ -175,13 +218,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
+  solve_type = 'PJFNK'
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 5
+  end_time = 6
   nl_abs_tol = 1e-8
 []
 
@@ -193,7 +236,7 @@
   # []
   [disp_y]
     type = PointValue
-    point = '1 0 0'
+    point = '1500 0 0'
     variable = disp_y
   []
   [rotation]
@@ -203,22 +246,12 @@
   []
   [forces_y]
     type = PointValue
-    point = '1 0 0'
+    point = '0 0 0'
     variable = forces_y
   []
   [moments_z]
     type = PointValue
-    point = '0 0 0'
-    variable = moments_z
-  [../]
-  [moments_z2]
-    type = PointValue
-    point = '0.5 0 0'
-    variable = moments_z
-  [../]
-  [moments_z3]
-    type = PointValue
-    point = '1 0 0'
+    point = '1500 0 0'
     variable = moments_z
   [../]
   # [./moments]

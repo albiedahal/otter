@@ -697,7 +697,12 @@ void PlasticBeam::computeQpStress()
     }
     plastic_strain_increment *= MathUtils::sign(trial_stress);
 
+    std::cout<<"hardening variable = "<<_hardening_variable[_qp]<<"\n";
+
     _plastic_strain[_qp] += plastic_strain_increment;
+
+    std::cout<<"plastic strain = "<<_plastic_strain[_qp]<<"\n";
+
     elastic_strain_increment = strain_increment - plastic_strain_increment;
   }
   _grad_rot_0_local_t(2)= elastic_strain_increment;
