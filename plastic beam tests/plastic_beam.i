@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 2
+  nx = 1
   xmin = 0
   xmax = 1
 []
@@ -62,7 +62,7 @@
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
     yield_moment = '1100'
-    hardening_constant = '28996.333'
+    hardening_constant = '28996.33'
   []
   [stress]
     type = ComputeBeamResultants

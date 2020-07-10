@@ -24,7 +24,10 @@ NonlinearBeam::validParams()
                              "Yield moments after which plastic strain starts accumulating");
   params.addParam<Real>("kinematic_hardening_coefficient", 0.0, "Kinematic Hardening coefficient");
   params.addParam<Real>("isotropic_hardening_coefficient", 0.0, "Isotropic Hardening coefficient");
-  params.addParam<Real>("hardening_constant", 1.0, "Hardening constant");
+  params.addParam<Real>("kinematic_hardening_slope",0.0,"Kinematic hardening slope");
+  params.addParam<Real>("isotropic_hardening_slope",0.0,"Isotropic hardening slope");
+  params.addParam<Real>("hardening_constant", 1.0, "Hardening constant (c) value between [0,1]. If c=1 it is isotropic hardening_constant"
+                        "if c = 0, it is kinematic hardening and if c (0,1), it is mixed hardening");
   params.addParam<Real>(
      "absolute_tolerance", 1e-10, "Absolute convergence tolerance for Newton iteration");
   params.addParam<Real>(
@@ -48,6 +51,8 @@ NonlinearBeam::NonlinearBeam(const InputParameters & parameters)
     _yield_moments(getParam<RealVectorValue>("yield_moments")),
     _kinematic_hardening_coefficient(getParam<Real>("kinematic_hardening_coefficient")),
     _isotropic_hardening_coefficient(getParam<Real>("isotropic_hardening_coefficient")),
+    _kinematic_hardening_slope(getParam<Real>("kinematic_hardening_slope")),
+    _isotropic_hardening_slope(getParam<Real>("isotropic_hardening_slope")),
     _hardening_constant(getParam<Real>("hardening_constant")),
     _absolute_tolerance(parameters.get<Real>("absolute_tolerance")),
     _relative_tolerance(parameters.get<Real>("relative_tolerance")),
@@ -58,9 +63,14 @@ NonlinearBeam::NonlinearBeam(const InputParameters & parameters)
     _kin_hardening_variable_force(declareProperty<RealVectorValue>("kinematic hardening_variable_force")),
     _kin_hardening_variable_force_old(getMaterialPropertyOld<RealVectorValue>("kinematic hardening_variable_force")),
     _kin_hardening_variable_moment(declareProperty<RealVectorValue>("kinematic hardening_variable_moment")),
-    _kin_hardening_variable_moment_old(getMaterialPropertyOld<RealVectorValue>("kinematic hardening_variable_moment"))
+    _kin_hardening_variable_moment_old(getMaterialPropertyOld<RealVectorValue>("kinematic hardening_variable_moment")),
+    _max_its(1000)
 
 {
+  if(parameters.isParamSetByUser("kinematic_hardening_slope") && parameters.isParamSetByUser("kinematic_hardening_coefficient"))
+    mooseError("NonlinearBeam: Only the kinematic_hardening_slope or only the kinematic_hardening_coefficient can be defined but not both");
+  if(parameters.isParamSetByUser("isotropic_hardening_slope") && parameters.isParamSetByUser("isotropic_hardening_coefficient"))
+    mooseError("NonlinearBeam: Only the isotropic_hardening_slope or only the isotropic_hardening_coefficient can be defined but not both");
 }
 
 void
@@ -106,10 +116,16 @@ NonlinearBeam::computeQpProperties()
   _kin_hardening_variable_force[_qp] = _kin_hardening_variable_force_old[_qp];
   _kin_hardening_variable_moment[_qp] = _kin_hardening_variable_moment_old[_qp];
 
-  std::cout<<"yield force = "<<_yield_force<<"\n";
+  if(_kinematic_hardening_slope)
+    _kinematic_hardening_coefficient = _kinematic_hardening_slope/(1 - _kinematic_hardening_slope);
+
+  if(_isotropic_hardening_slope)
+    _isotropic_hardening_coefficient = _isotropic_hardening_slope/(1 - _isotropic_hardening_slope);
+
+  // std::cout<<"yield force = "<<_yield_force<<"\n";
   std::cout<<"trial force = "<<trial_force<<std::endl;
   std::cout<<"trial moment = "<<trial_moment<<std::endl;
-  std::cout<<"iso har var for = "<<_iso_hardening_variable_force[_qp]<<"\n";
+  // std::cout<<"iso har var for = "<<_iso_hardening_variable_force[_qp]<<"\n";
   std::cout<<"iso har var mom = "<<_iso_hardening_variable_moment[_qp]<<"\n";
 
 
@@ -166,22 +182,26 @@ NonlinearBeam::computeQpProperties()
       AK += dphidM(i) * _material_flexure[_qp](i) * dphidMa(i);
     }
 
-    std::cout<<"dphidF = "<<dphidF<<std::endl;
-    std::cout<<"dphidM = "<<dphidM<<std::endl;
-    std::cout<<"denom = "<<denom<<std::endl;
+    // std::cout<<"dphidF = "<<dphidF<<std::endl;
+    // std::cout<<"dphidM = "<<dphidM<<std::endl;
+    // std::cout<<"dphidMy = "<<dphidMy<<std::endl;
+    // std::cout<<"denom = "<<denom<<std::endl;
+    // std::cout<<"A = "<<AI<<std::endl;
 
 
 
 
-    Real lambda = yield_condition/(denom - _isotropic_hardening_coefficient * AI - _kinematic_hardening_coefficient * AK);
+    Real lambda = yield_condition/(denom - _hardening_constant * _isotropic_hardening_coefficient * AI - (1 - _hardening_constant) * _kinematic_hardening_coefficient * AK);
     // lambda *= MathUtils::sign(trial_force(1));
 
     std::cout<<"lambda = "<<lambda<<std::endl;
 
     for (unsigned int i =0; i<3; ++i)
     {
-      _iso_hardening_variable_force[_qp](i) = _iso_hardening_variable_force_old[_qp](i) + _isotropic_hardening_coefficient * _material_stiffness[_qp](i) * std::abs(lambda * dphidF(i));
-      _iso_hardening_variable_moment[_qp](i) = _iso_hardening_variable_moment_old[_qp](i) + _isotropic_hardening_coefficient * _material_flexure[_qp](i) * std::abs(lambda * dphidM(i));
+      _iso_hardening_variable_force[_qp](i) = _iso_hardening_variable_force_old[_qp](i) + _hardening_constant * _isotropic_hardening_coefficient * _material_stiffness[_qp](i) * std::abs(lambda * dphidF(i));
+      _iso_hardening_variable_moment[_qp](i) = _iso_hardening_variable_moment_old[_qp](i) + _hardening_constant * _isotropic_hardening_coefficient * _material_flexure[_qp](i) * std::abs(lambda * dphidM(i));
+      _kin_hardening_variable_force[_qp](i) = _kin_hardening_variable_force_old[_qp](i) + (1 - _hardening_constant) * _kinematic_hardening_coefficient * _material_stiffness[_qp](i) * lambda * dphidF(i);
+      _kin_hardening_variable_moment[_qp](i) = _kin_hardening_variable_moment_old[_qp](i) + (1 - _hardening_constant) * _kinematic_hardening_coefficient * _material_flexure[_qp](i) * lambda * dphidM(i);
       F_hat(i) = trial_force(i) - lambda * _material_stiffness[_qp](i) * dphidF(i);
       M_hat(i) = trial_moment(i) - lambda * _material_flexure[_qp](i) * dphidM(i);
       // dphidF(i) = 2 * (F_hat(i)/Utility::pow<2>(_yield_force(i)+ _iso_hardening_variable_force[_qp](i)));
@@ -189,8 +209,8 @@ NonlinearBeam::computeQpProperties()
     }
     dphidF(0) = 2 * ((F_hat(0) - _kin_hardening_variable_force[_qp](0))/Utility::pow<2>(_yield_force(0)+ _iso_hardening_variable_force[_qp](0)));
 
-    std::cout<<"dphidF = "<<dphidF<<std::endl;
-    std::cout<<"dphidM = "<<dphidM<<std::endl;
+    // std::cout<<"dphidF = "<<dphidF<<std::endl;
+    // std::cout<<"dphidM = "<<dphidM<<std::endl;
     std::cout<<"F_hat = "<<F_hat<<std::endl;
     std::cout<<"M_hat= "<<M_hat<<std::endl;
     std::cout<<"iso har var mom after lambda = "<<_iso_hardening_variable_moment[_qp]<<"\n";
@@ -223,9 +243,8 @@ NonlinearBeam::computeQpProperties()
     Real iteration = 0;
 
     while(std::abs(yield_condition) > _absolute_tolerance)
-    // while (iteration<2)
+    // while (iteration<8)
     {
-      ++iteration;
       yield_condition = Utility::pow<2>((F(0) - _kin_hardening_variable_force[_qp](0))/(_yield_force(0)+ _iso_hardening_variable_force[_qp](0))) +
                         // Utility::pow<2>((F(1) - _kin_hardening_variable_force[_qp](1))/(_yield_force(1)+ _iso_hardening_variable_force[_qp](1))) +
                         // Utility::pow<2>((F(2) - _kin_hardening_variable_force[_qp](2))/(_yield_force(2)+ _iso_hardening_variable_force[_qp](2))) +
@@ -269,8 +288,9 @@ NonlinearBeam::computeQpProperties()
       }
 
       Real lambda_dot;
-      lambda_dot = (yield_condition - numer)/(denomr - _isotropic_hardening_coefficient * BI - _kinematic_hardening_coefficient * BK);
-      // lambda_dot *= MathUtils::sign(trial_force(1));
+      lambda_dot = (yield_condition - numer)/(denomr - _hardening_constant * _isotropic_hardening_coefficient * BI - (1 - _hardening_constant) * _kinematic_hardening_coefficient * BK);
+
+      std::cout<<"lambda dot = "<<lambda_dot<<"\n";
 
       for (unsigned int i =0; i<3; ++i)
       {
@@ -284,14 +304,19 @@ NonlinearBeam::computeQpProperties()
 
       for(unsigned int i = 0; i<3; ++i)
       {
-        _iso_hardening_variable_force[_qp](i) = _iso_hardening_variable_force_old[_qp](i) + _isotropic_hardening_coefficient * _material_stiffness[_qp](i) * std::abs(lambda * dphidF(i));
-        _iso_hardening_variable_moment[_qp](i) = _iso_hardening_variable_moment_old[_qp](i) + _isotropic_hardening_coefficient * _material_flexure[_qp](i) * std::abs(lambda * dphidM(i));
-        _kin_hardening_variable_force[_qp](i) = _kin_hardening_variable_force_old[_qp](i) + _kinematic_hardening_coefficient * _material_stiffness[_qp](i) * lambda * dphidF(i);
-        _kin_hardening_variable_moment[_qp](i) = _kin_hardening_variable_moment_old[_qp](i) + _kinematic_hardening_coefficient * _material_flexure[_qp](i) * lambda * dphidM(i);
+        _iso_hardening_variable_force[_qp](i) = _iso_hardening_variable_force_old[_qp](i) + _hardening_constant * _isotropic_hardening_coefficient * _material_stiffness[_qp](i) * std::abs(lambda * dphidF(i));
+        _iso_hardening_variable_moment[_qp](i) = _iso_hardening_variable_moment_old[_qp](i) + _hardening_constant * _isotropic_hardening_coefficient * _material_flexure[_qp](i) * std::abs(lambda * dphidM(i));
+        _kin_hardening_variable_force[_qp](i) = _kin_hardening_variable_force_old[_qp](i) + (1 - _hardening_constant) * _kinematic_hardening_coefficient * _material_stiffness[_qp](i) * lambda * dphidF(i);
+        _kin_hardening_variable_moment[_qp](i) = _kin_hardening_variable_moment_old[_qp](i) + (1 - _hardening_constant) * _kinematic_hardening_coefficient * _material_flexure[_qp](i) * lambda * dphidM(i);
       }
+
+      ++iteration;
+      if(iteration > _max_its)
+        throw MooseException("NonlinearBeam: Plasticity model did not converge");
 
       // std::cout<<"F = "<<F<<"\n";
       // std::cout<<"M = "<<M<<"\n\n";
+      // std::cout<<"hard var = "<<_iso_hardening_variable_moment[_qp]<<"\n";
 
     }
     trial_force = F;

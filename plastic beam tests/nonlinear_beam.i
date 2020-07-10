@@ -33,7 +33,7 @@
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-2200*t'
+#     function = '-1100*t'
 #     variable = disp_y
 #     boundary = 'right'
 #   []
@@ -70,8 +70,11 @@
     yield_force = '8700000000 8700000000 8700000000'
     yield_moments = '1100 1100 1100'
     outputs = exodus
-    isotropic_hardening_coefficient = 0.05
-    kinematic_hardening_coefficient = 0
+    isotropic_hardening_coefficient = 0.3
+    # kinematic_hardening_coefficient = 1
+    # kinematic_hardening_slope = 0.6
+    # isotropic_hardening_slope = 0.4
+    hardening_constant = 1
     output_properties = 'forces moments'
   []
 []
@@ -185,7 +188,8 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 0.25
-  end_time = 15
+  start_time = 0
+  end_time = 8
   nl_abs_tol = 1e-8
 []
 
@@ -205,11 +209,11 @@
     boundary = right
     variable = rot_z
   []
-  [rotation2]
-    type = PointValue
-    point = '0.5 0 0'
-    variable = rot_z
-  []
+  # [rotation2]
+  #   type = PointValue
+  #   point = '0.5 0 0'
+  #   variable = rot_z
+  # []
   [forces_y]
     type = PointValue
     point = '1 0 0'

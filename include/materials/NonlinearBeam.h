@@ -57,8 +57,10 @@ protected:
   ///  yield and hardening property input
   RealVectorValue _yield_force;
   RealVectorValue _yield_moments;
-  const Real _kinematic_hardening_coefficient;
-  const Real _isotropic_hardening_coefficient;
+  Real _kinematic_hardening_coefficient;
+  Real _isotropic_hardening_coefficient;
+  const Real _kinematic_hardening_slope;
+  const Real _isotropic_hardening_slope;
   const Real _hardening_constant;
 
   /// convergence tolerance
@@ -74,4 +76,8 @@ protected:
   const MaterialProperty<RealVectorValue> & _kin_hardening_variable_force_old;
   MaterialProperty<RealVectorValue> & _kin_hardening_variable_moment;
   const MaterialProperty<RealVectorValue> & _kin_hardening_variable_moment_old;
+
+
+  /// maximum no. of iterations
+  const unsigned int _max_its;
 };

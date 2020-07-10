@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 10
+  nx = 1
   xmin = 0
   xmax = 1
 []
@@ -40,14 +40,20 @@
   [../]
 [../]
 
-# [NodalKernels]
-#   [force_y2]
-#     type = UserForcingFunctionNodalKernel
-#     function = '-1000*t'
-#     variable = disp_y
-#     boundary = 'right'
-#   []
-# []
+[NodalKernels]
+  [force_y2]
+    type = UserForcingFunctionNodalKernel
+    function = '-1000'
+    variable = disp_y
+    boundary = 'right'
+  []
+  [force_x2]
+    type = UserForcingFunctionNodalKernel
+    function = '-1000'
+    variable = disp_z
+    boundary = 'right'
+  []
+[]
 
 # [Functions]
 #   [load]
@@ -71,6 +77,8 @@
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
+    outputs = exodus
+    output_properties = 'mech_disp_strain_increment mech_rot_strain_increment'
   []
   [stress]
     type = ComputeBeamResultants
@@ -117,12 +125,12 @@
     boundary = left
     value = 0
   []
-  [load]
-    type = FunctionDirichletBC
-    variable = disp_y
-    boundary = right
-    function = '0.0005'
-  [../]
+  # [load]
+  #   type = FunctionDirichletBC
+  #   variable = disp_y
+  #   boundary = right
+  #   function = 'load'
+  # [../]
 []
 
 [Kernels]
@@ -134,7 +142,7 @@
     component = 0
   []
   [solid_disp_y]
-    type = StressDivergenceBeaml
+    type = StressDivergenceBeam
     variable = disp_y
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
@@ -202,61 +210,86 @@
     point = '1 0 0'
     variable = disp_y
   []
-  [disp_y2]
-    type = PointValue
-    point = '0.75 0 0'
-    variable = disp_y
-  []
+  # [disp_y2]
+  #   type = PointValue
+  #   point = '0.75 0 0'
+  #   variable = disp_y
+  # []
   [rotation1]
     type = PointValue
     point = '1 0 0'
-    variable = rot_z
+    variable = rot_x
   []
   [rotation2]
     type = PointValue
-    point = '0.75 0 0'
-    variable = rot_z
+    point = '1 0 0'
+    variable = rot_y
   []
-  [moments_z1]
+  [rotation3]
     type = PointValue
     point = '1 0 0'
+    variable = rot_z
+  []
+  [intstr1]
+    type = PointValue
+    point = '0 0 0'
+    variable = mech_disp_strain_increment_x
+  []
+  [intstr2]
+    type = PointValue
+    point = '1 0 0'
+    variable = mech_disp_strain_increment_y
+  []
+  [intstr3]
+    type = PointValue
+    point = '1 0 0'
+    variable = mech_disp_strain_increment_z
+  []
+  [moments_z]
+    type = PointValue
+    point = '0 0 0'
     variable = moments_z
   []
   [moments_z2]
     type = PointValue
-    point = '0.75 0 0'
+    point = '0.5 0 0'
     variable = moments_z
   []
-  [forces_y1]
+  [moments_z3]
     type = PointValue
     point = '1 0 0'
-    variable = forces_y
+    variable = moments_z
   []
-  [forces_y2]
-    type = PointValue
-    point = '0.75 0 0'
-    variable = forces_y
-  []
-  [res_forcey1]
-    type = PointValue
-    point = '1 0 0'
-    variable = forcey
-  []
-  [res_forcey2]
-    type = PointValue
-    point = '0.75 0 0'
-    variable = forcey
-  []
-  [res_momentz1]
-    type = PointValue
-    point = '1 0 0'
-    variable = momentz
-  []
-  [res_momentz2]
-    type = PointValue
-    point = '0 0 0'
-    variable = momentz
-  []
+  # [forces_y1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = forces_y
+  # []
+  # [forces_y2]
+  #   type = PointValue
+  #   point = '0.75 0 0'
+  #   variable = forces_y
+  # []
+  # [res_forcey1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = forcey
+  # []
+  # [res_forcey2]
+  #   type = PointValue
+  #   point = '0.75 0 0'
+  #   variable = forcey
+  # []
+  # [res_momentz1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = momentz
+  # []
+  # [res_momentz2]
+  #   type = PointValue
+  #   point = '0 0 0'
+  #   variable = momentz
+  # []
 []
 
   [Outputs]

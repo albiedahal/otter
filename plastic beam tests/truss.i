@@ -16,14 +16,14 @@
   [../]
 []
 
-# [NodalKernels]
-#   [force_y2]
-#     type = UserForcingFunctionNodalKernel
-#     function = '1e7*t'
-#     variable = disp_x
-#     boundary = 'right'
-#   []
-# []
+[NodalKernels]
+  [force_x]
+    type = UserForcingFunctionNodalKernel
+    function = '150e5*t'
+    variable = disp_x
+    boundary = 'right'
+  []
+[]
 
 [AuxVariables]
  [./axial_stress]
@@ -59,12 +59,12 @@
     boundary = left
     value = 0.0
   [../]
-  [./load]
-    type = FunctionDirichletBC
-    variable = disp_x
-    boundary = right
-    function = 't'
-  [../]
+  # [./load]
+  #   type = FunctionDirichletBC
+  #   variable = disp_x
+  #   boundary = right
+  #   function = 't'
+  # [../]
 []
 
 [AuxKernels]
@@ -113,7 +113,8 @@
   petsc_options_value = 'lu'
   nl_abs_tol = 1e-11
   l_max_its = 20
-  dt = 10e-5
+  start_time = 0
+  dt = 0.5
   num_steps = 10
 []
 
@@ -132,7 +133,7 @@
     type = PlasticTruss
     youngs_modulus = 2.0e11
     yield_stress = 500e5
-    hardening_constant = 1e11
+    hardening_constant = 0
     outputs = exodus
   [../]
 []
