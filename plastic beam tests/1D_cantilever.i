@@ -40,28 +40,28 @@
   [../]
 [../]
 
-[NodalKernels]
-  [force_y2]
-    type = UserForcingFunctionNodalKernel
-    function = '-1000'
-    variable = disp_y
-    boundary = 'right'
-  []
-  [force_x2]
-    type = UserForcingFunctionNodalKernel
-    function = '-1000'
-    variable = disp_z
-    boundary = 'right'
-  []
-[]
-
-# [Functions]
-#   [load]
-#     type = PiecewiseLinear
-#     x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
-#     y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.004 -0.008 -.00012 -0.008 -0.004 0 0.0004 0.0008 0.0012'
+# [NodalKernels]
+#   [force_y2]
+#     type = UserForcingFunctionNodalKernel
+#     function = '-1000'
+#     variable = disp_y
+#     boundary = 'right'
+#   []
+#   [force_x2]
+#     type = UserForcingFunctionNodalKernel
+#     function = '-1000'
+#     variable = disp_z
+#     boundary = 'right'
 #   []
 # []
+
+[Functions]
+  [load]
+    type = PiecewiseLinear
+    x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
+    y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.004 -0.008 -.00012 -0.008 -0.004 0 0.0004 0.0008 0.0012'
+  []
+[]
 
 [Materials]
   [elasticity]
@@ -125,12 +125,12 @@
     boundary = left
     value = 0
   []
-  # [load]
-  #   type = FunctionDirichletBC
-  #   variable = disp_y
-  #   boundary = right
-  #   function = 'load'
-  # [../]
+  [load]
+    type = FunctionDirichletBC
+    variable = disp_y
+    boundary = right
+    function = 'load'
+  [../]
 []
 
 [Kernels]
@@ -194,8 +194,8 @@
   # petsc_options_iname = '-pc_type'
   # petsc_options_value = 'lu'
   # line_search = 'none'
-  dt = 1
-  end_time = 1
+  dt = 0.25
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
@@ -215,16 +215,16 @@
   #   point = '0.75 0 0'
   #   variable = disp_y
   # []
-  [rotation1]
-    type = PointValue
-    point = '1 0 0'
-    variable = rot_x
-  []
-  [rotation2]
-    type = PointValue
-    point = '1 0 0'
-    variable = rot_y
-  []
+  # [rotation1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = rot_x
+  # []
+  # [rotation2]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = rot_y
+  # []
   [rotation3]
     type = PointValue
     point = '1 0 0'
@@ -245,16 +245,16 @@
     point = '1 0 0'
     variable = mech_disp_strain_increment_z
   []
-  [moments_z]
-    type = PointValue
-    point = '0 0 0'
-    variable = moments_z
-  []
-  [moments_z2]
-    type = PointValue
-    point = '0.5 0 0'
-    variable = moments_z
-  []
+  # [moments_z]
+  #   type = PointValue
+  #   point = '0 0 0'
+  #   variable = moments_z
+  # []
+  # [moments_z2]
+  #   type = PointValue
+  #   point = '0.5 0 0'
+  #   variable = moments_z
+  # []
   [moments_z3]
     type = PointValue
     point = '1 0 0'

@@ -77,6 +77,13 @@ protected:
   MaterialProperty<RealVectorValue> & _kin_hardening_variable_moment;
   const MaterialProperty<RealVectorValue> & _kin_hardening_variable_moment_old;
 
+  ///Plastic strains
+  MaterialProperty<RealVectorValue> & _plastic_strain_translational;
+  const MaterialProperty<RealVectorValue> & _plastic_strain_translational_old;
+  MaterialProperty<RealVectorValue> & _plastic_strain_rotational;
+  const MaterialProperty<RealVectorValue> & _plastic_strain_rotational_old;
+
+
 
   /// maximum no. of iterations
   const unsigned int _max_its;

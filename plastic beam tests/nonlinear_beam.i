@@ -50,7 +50,7 @@
 [Materials]
   [elasticity]
     type = ComputeElasticityBeam
-    poissons_ratio = 0.33
+    poissons_ratio = 0.3
     youngs_modulus = 7.310e10
   []
   [strain]
@@ -70,11 +70,11 @@
     yield_force = '8700000000 8700000000 8700000000'
     yield_moments = '1100 1100 1100'
     outputs = exodus
-    isotropic_hardening_coefficient = 0.3
+    # isotropic_hardening_coefficient = 1
     # kinematic_hardening_coefficient = 1
-    # kinematic_hardening_slope = 0.6
-    # isotropic_hardening_slope = 0.4
-    hardening_constant = 1
+    kinematic_hardening_slope = 0.3
+    isotropic_hardening_slope = 0.9
+    hardening_constant = 0.9
     output_properties = 'forces moments'
   []
 []
@@ -182,14 +182,14 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
+  solve_type = 'PJFNK'
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
-  line_search = 'bt'
+  # line_search = 'bt'
   dt = 0.25
   start_time = 0
-  end_time = 8
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
@@ -234,22 +234,16 @@
     point = '1 0 0'
     variable = moments_z
   [../]
-  # [./moments]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = moments
-  # [../]
-  # [forces]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = forces
-  # [../]
-  # [./e_xx]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = total_stretch
-  # [../]
-  # [./ep_xx]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = plastic_strain
-  # [../]
+  # [plasticstrian1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = translational_plastic_strain_y
+  # []
+  # [plasticstrian2]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = rotational_plastic_strain_z
+  # []
 []
 
   [Outputs]

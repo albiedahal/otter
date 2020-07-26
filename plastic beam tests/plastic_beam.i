@@ -62,7 +62,7 @@
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
     yield_moment = '1100'
-    hardening_constant = '28996.33'
+    hardening_constant = '5480307'
   []
   [stress]
     type = ComputeBeamResultants
@@ -181,7 +181,7 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 0.25
-  end_time = 6
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
