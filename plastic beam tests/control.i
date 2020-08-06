@@ -41,18 +41,18 @@
 [NodalKernels]
   [force_y2]
     type = UserForcingFunctionNodalKernel
-    function = '-300*t'
+    function = 'load'
     variable = disp_y
     boundary = 'mid'
   []
 []
 
-# [Functions]
-#   [load]
-#     type = ConstantFunction
-#     value = -5000
-#   []
-# []
+[Functions]
+  [load]
+    type = ConstantFunction
+    value = -5000
+  []
+[]
 
 [Materials]
   [elasticity]
@@ -225,7 +225,7 @@
   petsc_options_value = 'lu'
   line_search = 'bt'
   dt = 1
-  end_time = 5
+  end_time = 1
   nl_abs_tol = 1e-8
 []
 

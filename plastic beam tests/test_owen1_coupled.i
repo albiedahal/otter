@@ -62,7 +62,7 @@
     youngs_modulus = 210
   []
   [strain]
-    type = ComputeIncrementalBeamStrainl
+    type = ComputeIncrementalBeamStrain
     Iz = 84375000
     Iy = 337500000
     area = 45000
@@ -76,8 +76,10 @@
     yield_force = '8700000000 8700000000 8700000000'
     yield_moments = '843750 843750 843750'
     isotropic_hardening_coefficient = 0.2
+    kinematic_hardening_coefficient = 0.3
     outputs = exodus
     output_properties = 'forces moments'
+    hardening_constant = 1
     # absolute_tolerance = 1e-3
   []
 []
@@ -226,8 +228,8 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 0.25
-  end_time = 3
+  dt = 1
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
@@ -239,7 +241,7 @@
   # []
   [disp_y]
     type = PointValue
-    point = '300 0 0'
+    point = '1500 0 0'
     variable = disp_y
   []
   [rotation]
@@ -249,7 +251,7 @@
   []
   [forces_y]
     type = PointValue
-    point = '300 0 0'
+    point = '0 0 0'
     variable = forces_y
   []
   [moments_z]

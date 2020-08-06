@@ -62,7 +62,7 @@
   []
   [strain]
     type = LayeredBeam
-    num_layers = 8
+    num_layers = 6
     Iz = 84375000
     Iy = 337500000
     area = 45000
@@ -225,8 +225,8 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 1
-  end_time = 8
+  dt = 0.25
+  end_time = 6
   nl_abs_tol = 1e-8
 []
 

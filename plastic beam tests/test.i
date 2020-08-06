@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 1
+  nx = 10
   xmin = 0
   xmax = 3000
 []
@@ -29,22 +29,39 @@
   []
 []
 
+[AuxVariables]
+  [forcey]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [momentz]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+[../]
 
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-100*t'
+#     function = '-1000'
 #     variable = disp_y
+#     boundary = 'right'
+#   []
+#   [force_x2]
+#     type = UserForcingFunctionNodalKernel
+#     function = '-1000'
+#     variable = disp_z
 #     boundary = 'right'
 #   []
 # []
 
-# [Functions]
-#   [load]
-#     type = ConstantFunction
-#     value = -5000
-#   []
-# []
+[Functions]
+  [load]
+    type = PiecewiseLinear
+    x = '0   1   2   3   4  5  6  7  8   9  10 11 12 13 14 15'
+    y = '0   30  60  90  60  30  0 -30 -60 -90  -60 -30  0  30  60 90'
+  []
+[]
 
 [Materials]
   [elasticity]
@@ -53,24 +70,27 @@
     youngs_modulus = 210
   []
   [strain]
-    type = LayeredBeam
-    num_layers = 6
-    Iy = 337500000
+    type = ComputeIncrementalBeamStrain
     Iz = 84375000
+    Iy = 337500000
     area = 45000
-    depth = 300
-    width = 150
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    yield_stress = '0.25'
-    hardening_constant = '0'
+    outputs = exodus
+    # output_properties = 'mech_disp_strain_increment mech_rot_strain_increment'
   []
   [stress]
-    type = ComputeBeamResultantsl
+    type = NonlinearBeam
     block = 0
+    yield_force = '8700000000 8700000000 8700000000'
+    yield_moments = '843750 843750 843750'
+    isotropic_hardening_slope = 0.2
+    kinematic_hardening_slope = 0.2
     outputs = exodus
     output_properties = 'forces moments'
+    hardening_constant = 1
+    # absolute_tolerance = 1e-3
   []
 []
 
@@ -115,7 +135,7 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = '10*t'
+    function = 'load'
   [../]
 []
 
@@ -133,6 +153,7 @@
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 1
+    save_in = forcey
   []
   [solid_disp_z]
     type = StressDivergenceBeam
@@ -161,6 +182,7 @@
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 5
+    save_in = momentz
   []
 []
 
@@ -168,9 +190,6 @@
   [SMP]
     type = SMP
     full = true
-    # petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -snes_atol -snes_rtol -snes_max_it -ksp_atol -ksp_rtol -sub_pc_factor_shift_type'
-    # petsc_options_value = 'gmres asm lu 1E-8 1E-8 25 1E-8 1E-8 NONZERO'
-
   []
 []
 
@@ -180,9 +199,9 @@
   # petsc_options = '-snes_ksp_ew'
   # petsc_options_iname = '-pc_type'
   # petsc_options_value = 'lu'
-  # line_search = 'bt'
-  dt = 2
-  end_time = 30
+  # line_search = 'none'
+  dt = 0.25
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
@@ -197,37 +216,86 @@
     point = '3000 0 0'
     variable = disp_y
   []
-  [rotation]
-    type = NodalMaxValue
-    boundary = right
+  [disp_y2]
+    type = PointValue
+    point = '1500 0 0'
+    variable = disp_y
+  []
+  # [rotation1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = rot_x
+  # []
+  [rotation2]
+    type = PointValue
+    point = '1500 0 0'
     variable = rot_z
   []
-  [forces_y]
+  [rotation3]
     type = PointValue
     point = '3000 0 0'
-    variable = forces_y
+    variable = rot_z
   []
+  # [intstr1]
+  #   type = PointValue
+  #   point = '0 0 0'
+  #   variable = mech_disp_strain_increment_x
+  # []
+  # [intstr2]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = mech_disp_strain_increment_y
+  # []
+  # [pstr]
+  #   type = PointValue
+  #   point = '3000 0 0'
+  #   variable = translational_plastic_strain_y
+  # []
   [moments_z]
     type = PointValue
     point = '0 0 0'
     variable = moments_z
-  [../]
-  # [./moments]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = moments
-  # [../]
-  # [forces]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = forces
-  # [../]
-  # [./e_xx]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = total_stretch
-  # [../]
-  # [./ep_xx]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = plastic_strain
-  # [../]
+  []
+  # [moments_z2]
+  #   type = PointValue
+  #   point = '1500 0 0'
+  #   variable = moments_z
+  # []
+  # [moments_z3]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = moments_z
+  # []
+  [forces_y1]
+    type = PointValue
+    point = '0 0 0'
+    variable = forces_y
+  []
+  # [forces_y2]
+  #   type = PointValue
+  #   point = '0.75 0 0'
+  #   variable = forces_y
+  # []
+  # [res_forcey1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = forcey
+  # []
+  # [res_forcey2]
+  #   type = PointValue
+  #   point = '0.75 0 0'
+  #   variable = forcey
+  # []
+  # [res_momentz1]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = momentz
+  # []
+  # [res_momentz2]
+  #   type = PointValue
+  #   point = '0 0 0'
+  #   variable = momentz
+  # []
 []
 
   [Outputs]

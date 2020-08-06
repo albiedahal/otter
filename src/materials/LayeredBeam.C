@@ -743,7 +743,7 @@ void LayeredBeam::computeQpStress()
     Real yield_condition = std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress;
     Real iteration = 0;
     Real plastic_strain_increment = 0.0;
-    Real elastic_strain_increment = strain_increment;
+    Real elastic_strain_increment = strain_increment * zmidl;
 
     //
     std::cout<<"yield condition = "<<yield_condition<<std::endl;
@@ -752,10 +752,10 @@ void LayeredBeam::computeQpStress()
     if (yield_condition > 0.0)
     {
       Real residual = std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress -
-                    _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+                    _material_flexure[_qp](2) * plastic_strain_increment;
 
       Real reference_residual =
-          std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+          std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment;
 
       while (std::abs(residual) > _absolute_tolerance ||
              std::abs(residual / reference_residual) > _relative_tolerance)
@@ -764,15 +764,15 @@ void LayeredBeam::computeQpStress()
         Real hardening_slope = computeHardeningDerivative(plastic_strain_increment,i);
 
         Real scalar = (std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress -
-                     _material_flexure[_qp](2) * plastic_strain_increment * zmidl) /
-                    (_material_flexure[_qp](2) * zmidl + hardening_slope);
+                     _material_flexure[_qp](2) * plastic_strain_increment) /
+                    (_material_flexure[_qp](2) + hardening_slope);
 
         plastic_strain_increment += scalar;
 
         residual = std::abs(trial_stress) - (*_hardening_variable[i])[_qp] - _yield_stress -
-                 _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+                 _material_flexure[_qp](2) * plastic_strain_increment;
 
-        reference_residual = std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment * zmidl;
+        reference_residual = std::abs(trial_stress) - _material_flexure[_qp](2) * plastic_strain_increment;
 
         ++iteration;
         if (iteration > _max_its) // not converging
@@ -780,15 +780,15 @@ void LayeredBeam::computeQpStress()
       }
       plastic_strain_increment *= MathUtils::sign(trial_stress);
 
-      // std::cout<<"plastic strain inc = "<<plastic_strain_increment<<std::endl;
+      std::cout<<"plastic strain inc = "<<plastic_strain_increment<<std::endl;
 
       (*_plastic_strain[i])[_qp] += plastic_strain_increment;
-      elastic_strain_increment = strain_increment - plastic_strain_increment;
+      elastic_strain_increment = strain_increment * zmidl - plastic_strain_increment;
 
       std::cout<<"elastic strain_increment = "<<elastic_strain_increment<<std::endl;
 
     }
-    (*_direct_stress[i])[_qp] = (*_direct_stress_old[i])[_qp] + elastic_strain_increment * _material_flexure[_qp](2) * zmidl;
+    (*_direct_stress[i])[_qp] = (*_direct_stress_old[i])[_qp] + elastic_strain_increment * _material_flexure[_qp](2);
 
     std::cout<<"new direct stress "<<_qp<<i<<" = "<<(*_direct_stress[i])[_qp]<<std::endl;
 

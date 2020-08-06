@@ -11,7 +11,7 @@
   dim = 1
   nx = 1
   xmin = 0
-  xmax = 1
+  xmax = 3000
 []
 
 [Variables]
@@ -39,30 +39,33 @@
 #   []
 # []
 
-[Functions]
-  [load]
-    type = PiecewiseLinear
-    x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
-    y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.0004 -0.0008 -.0012 -0.0008 -0.0004 0 0.0004 0.0008 0.0012'
-  []
-[]
+# [Functions]
+#   [load]
+#     type = PiecewiseLinear
+#     x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
+#     y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.0004 -0.0008 -.0012 -0.0008 -0.0004 0 0.0004 0.0008 0.0012'
+#   []
+# []
 
 [Materials]
   [elasticity]
     type = ComputeElasticityBeam
-    poissons_ratio = 0.33
-    youngs_modulus = 7.310e10
+    poissons_ratio = 0.3
+    youngs_modulus = 210
   []
   [strain]
     type = PlasticBeam
-    Iy = 8.33e-6
-    Iz = 8.33e-6
-    area = 0.01
+    num_layers = 6
+    Iy = 337500000
+    Iz = 84375000
+    area = 45000
+    depth = 300
+    width = 150
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    yield_moment = '1100'
-    hardening_constant = '5480307'
+    yield_moment = '843750'
+    hardening_constant = '1.771875e10'
   []
   [stress]
     type = ComputeBeamResultants
@@ -113,8 +116,8 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    # function = '0.0005*t'
-    function = 'load'
+    function = '10*t'
+    # function = 'load'
   [../]
 []
 
@@ -180,8 +183,8 @@
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 0.25
-  end_time = 15
+  dt = 1
+  end_time = 10
   nl_abs_tol = 1e-8
 []
 
@@ -193,7 +196,7 @@
   # []
   [disp_y]
     type = PointValue
-    point = '1 0 0'
+    point = '3000 0 0'
     variable = disp_y
   []
   [rotation]
@@ -203,22 +206,12 @@
   []
   [forces_y]
     type = PointValue
-    point = '1 0 0'
+    point = '3000 0 0'
     variable = forces_y
   []
   [moments_z]
     type = PointValue
     point = '0 0 0'
-    variable = moments_z
-  [../]
-  [moments_z2]
-    type = PointValue
-    point = '0.5 0 0'
-    variable = moments_z
-  [../]
-  [moments_z3]
-    type = PointValue
-    point = '1 0 0'
     variable = moments_z
   [../]
   # [./moments]
