@@ -103,20 +103,34 @@ KinematicPlasticityStressUpdate::updateState(RankTwoTensor & strain_increment,
 {
   // compute the deviatoric trial stress and trial strain from the current intermediate
   // configuration
+  // std::cout << "\n\n\n***************************\n";
+  // std::cout << "*** updateState() ***";
+  // std::cout << "\n***************************\n";
+  //
+  // std::cout << "For QP = (" << (_q_point[_qp])(0) << ", ";
+  // std::cout << (_q_point[_qp])(1) << ", " << (_q_point[_qp])(2) << "):\n\n";
+  //
+  // std::cout<<"trial stress = " << stress_new <<"\n";
+
+
 
   RankTwoTensor deviatoric_trial_stress = stress_new.deviatoric();
 
   _back_stress[_qp] = _back_stress_old[_qp];
+  RankTwoTensor effective_stress = deviatoric_trial_stress - _back_stress[_qp];
 
-  std::cout<<"_back_stress = " << _back_stress[_qp] <<"\n";
-  std::cout<<"sig_tr_' - x_t = " << deviatoric_trial_stress - _back_stress_old[_qp] <<"\n\n";
+  // std::cout<<"_back_stress = " << _back_stress[_qp] <<"\n";
+  // std::cout<<"sig_tr_' - x_t = " << deviatoric_trial_stress - _back_stress_old[_qp] <<"\n\n";
 
   // compute the effective trial stress
   Real dev_trial_stress_squared =
-      deviatoric_trial_stress.doubleContraction(deviatoric_trial_stress - _back_stress[_qp]);
+      effective_stress.doubleContraction(effective_stress);
+
+      // std::cout<<"xi = " << dev_trial_stress_squared <<"\n";
+
   Real effective_trial_stress = std::sqrt(3.0 / 2.0 * dev_trial_stress_squared);
 
-  std::cout<<"scalar eff trial stress = " << effective_trial_stress <<"\n";
+  // std::cout<<"scalar eff trial stress = " << effective_trial_stress <<"\n";
 
 
   // Set the value of 3 * shear modulus for use as a reference residual value
@@ -130,7 +144,6 @@ KinematicPlasticityStressUpdate::updateState(RankTwoTensor & strain_increment,
   if (!MooseUtils::absoluteFuzzyEqual(effective_trial_stress, 0.0))
   {
     Real test_strain = (effective_trial_stress - _yield_stress)/(_three_shear_modulus + _hardening_slope);
-    std::cout<<"test call befor return solve = "<<test_strain<<"\n";
 
     returnMappingSolve(effective_trial_stress, _scalar_effective_inelastic_strain, _console);
     if (_scalar_effective_inelastic_strain != 0.0)
@@ -140,11 +153,11 @@ KinematicPlasticityStressUpdate::updateState(RankTwoTensor & strain_increment,
           (1.5 * _scalar_effective_inelastic_strain / effective_trial_stress);
 
       // _back_stress[_qp] = _back_stress_old[_qp] + 2.0 * inelastic_strain_increment * _hardening_slope / 3.0;
-      // _back_stress[_qp] = _back_stress_old[_qp] + std::sqrt(2.0/3.0) * _scalar_effective_inelastic_strain * _hardening_slope * (deviatoric_trial_stress - _back_stress[_qp])/std::sqrt(dev_trial_stress_squared);
+      _back_stress[_qp] = _back_stress_old[_qp] + _scalar_effective_inelastic_strain * _hardening_slope * (deviatoric_trial_stress - _back_stress[_qp])/effective_trial_stress;
 
 
-      std::cout<<"del_p = " << _scalar_effective_inelastic_strain <<"\n\n";
-      std::cout<<"inelastic strain inc = " << inelastic_strain_increment <<"\n\n";
+      // std::cout<<"del_p = " << _scalar_effective_inelastic_strain <<"\n\n";
+      // std::cout<<"inelastic strain inc = " << inelastic_strain_increment <<"\n\n";
     }
 
 
@@ -154,12 +167,12 @@ KinematicPlasticityStressUpdate::updateState(RankTwoTensor & strain_increment,
   else
     inelastic_strain_increment.zero();
 
-  std::cout<<"strain inc = " << strain_increment <<"\n\n";
+  // std::cout<<"strain inc = " << strain_increment <<"\n\n";
 
 
   strain_increment -= inelastic_strain_increment;
 
-  std::cout<<"elastic strain inc = " << strain_increment <<"\n\n";
+  // std::cout<<"elastic strain inc = " << strain_increment <<"\n\n";
 
 
   _effective_inelastic_strain[_qp] =
@@ -169,18 +182,18 @@ KinematicPlasticityStressUpdate::updateState(RankTwoTensor & strain_increment,
   // to be isotropic and this method natively allows for changing in time
   // elasticity tensors
 
-  std::cout<<"stress old = " << stress_old <<"\n\n";
-  std::cout<<"elastic strain old = " << elastic_strain_old <<"\n\n";
+  // std::cout<<"stress old = " << stress_old <<"\n\n";
+  // std::cout<<"elastic strain old = " << elastic_strain_old <<"\n\n";
 
 
   stress_new = elasticity_tensor * (strain_increment + elastic_strain_old);
 
-  std::cout<<"new stress = " << stress_new <<"\n\n";
+  // std::cout<<"new stress = " << stress_new <<"\n\n";
 
 
   computeStressFinalize(inelastic_strain_increment);
 
-  _back_stress[_qp] = (2.0/3.0) * _plastic_strain[_qp] * _hardening_slope;
+  // _back_stress[_qp] = (2.0/3.0) * _plastic_strain[_qp] * _hardening_slope;
 
 
   computeTangentOperator(
@@ -195,11 +208,11 @@ KinematicPlasticityStressUpdate::computeStressInitialize(const Real effective_tr
 
   _yield_condition = effective_trial_stress - _yield_stress;
 
-  std::cout<<"yield condition = " << _yield_condition <<"\n";
+  // std::cout<<"yield condition = " << _yield_condition <<"\n";
 
   _plastic_strain[_qp] = _plastic_strain_old[_qp];
 
-  std::cout<<"plastic strain = " << _plastic_strain[_qp] <<"\n";
+  // std::cout<<"plastic strain = " << _plastic_strain[_qp] <<"\n";
 
 }
 
