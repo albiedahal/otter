@@ -50,10 +50,10 @@ protected:
                          bool compute_full_tangent_operator,
                          RankFourTensor & tangent_operator) override;
 
-  virtual void computeStressInitialize(const Real effective_trial_stress,
+  virtual void computeStressInitialize(const Real & effective_trial_stress,
                                        const RankFourTensor & elasticity_tensor) override;
   virtual Real computeResidual(const Real effective_trial_stress, const Real scalar) override;
-  virtual Real computeReferenceResidual(const Real effective_trial_stress, const Real scalar) override;
+  virtual Real computeReferenceResidual(const Real & effective_trial_stress, const Real & scalar_effective_inelastic_strain) override;
   virtual Real computeDerivative(const Real effective_trial_stress, const Real scalar) override;
   virtual void iterationFinalize(Real scalar) override;
   virtual void computeStressFinalize(const RankTwoTensor & plastic_strain_increment) override;

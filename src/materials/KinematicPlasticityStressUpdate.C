@@ -170,7 +170,7 @@ KinematicPlasticityStressUpdate::updateState(RankTwoTensor & strain_increment,
 
 
 void
-KinematicPlasticityStressUpdate::computeStressInitialize(const Real effective_trial_stress,
+KinematicPlasticityStressUpdate::computeStressInitialize(const Real & effective_trial_stress,
                                                          const RankFourTensor & elasticity_tensor)
 {
   computeYieldStress(elasticity_tensor);
@@ -204,8 +204,8 @@ KinematicPlasticityStressUpdate::computeResidual(const Real effective_trial_stre
 }
 
 Real
-KinematicPlasticityStressUpdate::computeReferenceResidual(const Real effective_trial_stress,
-                                                   const Real scalar_effective_inelastic_strain)
+KinematicPlasticityStressUpdate::computeReferenceResidual(const Real  & effective_trial_stress,
+                                                   const Real & scalar_effective_inelastic_strain)
 {
   return (effective_trial_stress - _hardening_slope * scalar_effective_inelastic_strain) / _three_shear_modulus -
               scalar_effective_inelastic_strain;
@@ -241,6 +241,8 @@ Real KinematicPlasticityStressUpdate::computeHardeningDerivative(Real /*scalar*/
 {
   if (_hardening_function)
   {
+
+    // std::cout<<"current strain = "<<_effective_inelastic_strain[_qp]<<"\n";
     const Real strain_old = _effective_inelastic_strain[_qp];
     const Point p; // Always (0,0,0)
 
