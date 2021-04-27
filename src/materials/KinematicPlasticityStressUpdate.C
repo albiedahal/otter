@@ -191,8 +191,8 @@ KinematicPlasticityStressUpdate::computeStressInitialize(const Real & effective_
 }
 
 Real
-KinematicPlasticityStressUpdate::computeResidual(const Real & effective_trial_stress,
-                                                 const Real & scalar)
+KinematicPlasticityStressUpdate::computeResidual(const Real effective_trial_stress,
+                                                 const Real scalar)
 {
   mooseAssert(_yield_condition != -1.0,
               "the yield stress was not updated by computeStressInitialize");
@@ -219,8 +219,8 @@ KinematicPlasticityStressUpdate::computeReferenceResidual(const Real  & effectiv
 }
 
 Real
-KinematicPlasticityStressUpdate::computeDerivative(const Real & /*effective_trial_stress*/,
-                                                   const Real & /*scalar*/)
+KinematicPlasticityStressUpdate::computeDerivative(const Real /*effective_trial_stress*/,
+                                                   const Real /*scalar*/)
 {
   if (_yield_condition > 0.0)
     return -1.0 - _hardening_slope / _three_shear_modulus;
