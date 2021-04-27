@@ -22,8 +22,6 @@
 
 registerMooseObject("TensorMechanicsApp", StressDivergenceBeaml);
 
-defineLegacyParams(StressDivergenceBeaml);
-
 InputParameters
 StressDivergenceBeaml::validParams()
 {
@@ -192,13 +190,12 @@ StressDivergenceBeaml::computeJacobian()
 }
 
 void
-StressDivergenceBeaml::computeOffDiagJacobian(MooseVariableFEBase & jvar)
+StressDivergenceBeaml::computeOffDiagJacobian(const unsigned int jvar_num)
 {
   //
   // std::cout<<"cODJ from SDB is called"<<std::endl;
   //
 
-  size_t jvar_num = jvar.number();
   if (jvar_num == _var.number())
     computeJacobian();
   else

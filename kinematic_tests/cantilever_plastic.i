@@ -15,7 +15,7 @@
   type = GeneratedMeshGenerator
   dim = 3
   nx = 100
-  ny = 4
+  ny = 8
   nz = 4
   xmin = 0
   xmax = 3000
@@ -112,21 +112,18 @@
     variable = disp_x
     boundary = 'left'
     value = 0
-    preset = false
   []
   [fixy1]
     type = DirichletBC
     variable = disp_y
     boundary = 'left'
     value = 0
-    preset = false
   []
   [fixz1]
     type = DirichletBC
     variable = disp_z
     boundary = 'left'
     value = 0
-    preset = false
   []
   # [pressure]
   #   type = Pressure
@@ -140,7 +137,7 @@
     variable = disp_y
     boundary = 'right'
     function = 'load'
-    preset = false
+    preset = true
   []
 []
 
