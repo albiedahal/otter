@@ -179,8 +179,8 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
 
 
 
-    RankTwoTensor backstress;
-    RankTwoTensor zero_tensor;
+    RankTwoTensor backstress;                     // temporary variable for deteriorated retrun mapping iterations
+    RankTwoTensor zero_tensor;                    // zero valued tensor for comparisons
     zero_tensor.zero();
     old = computeEffectiveStress(stress_old);
     s_new = computeEffectiveStress(stress_new);
@@ -204,7 +204,7 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
     //   mooseError("zero residual stress reached in Bilinear Plasticity");
     // }
 
-    // if(_damage[_qp] == true && MooseUtils::absoluteFuzzyGreaterThan((old - computeEffectiveStress(_back_stress[_qp])), _yield_stress))
+    // if(_damage[_qp] == true && MooseUtils::absoluteFuzzyGreaterThan(old, std::abs(computeEffectiveStress(_back_stress[_qp]) -_yield_stress)))
     // {
     //   mooseError("strength limit reached in Bilinear Plasticity");
     // }
@@ -253,6 +253,7 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
       }
     }
 
+    // unloading and reloading branch
     if(MooseUtils::absoluteFuzzyLessThan(s_new,old))
     {
       if(direction == 1)
@@ -277,6 +278,7 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
    RankTwoTensor deviatoric_trial_stress = stress_new.deviatoric();
    backstress = _det_back_stress_old[_qp];
 
+   // set value of temporary backstress variable and calculate effective stress
    if(backstress == zero_tensor && _damage[_qp] == false || _damage_old[_qp] == false && _damage[_qp] ==true || MooseUtils::absoluteFuzzyLessThan(s_new,old))
    {
      // std::cout<<"************ if 3 called *********************\n";
@@ -289,6 +291,7 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
      _effective_stress[_qp] = deviatoric_trial_stress - backstress;
    }
 
+   // stress changes sign, reinitialize the back stress tensors and yield stresses for iterations
    if(MathUtils::sign(_effective_stress[_qp].thirdInvariant()) == -1 && MathUtils::sign(_effective_stress_old[_qp].thirdInvariant()) == 1 && direction == 1)
    {
      // std::cout<<"************ if 4 called *********************\n";
@@ -351,6 +354,7 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
    if(_yield_condition > 0)
    {
      // std::cout<<"************ if 8 called *********************\n";
+     // plastic iterations for linear hardening
      if(_damage[_qp] == false)
      {
        // std::cout<<"************ if 81 called *********************\n";
@@ -375,6 +379,8 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
       // might be unnecessary
       _det_back_stress[_qp].zero();
      }
+
+     // plastic iterations for softening branch
      if(_damage[_qp] == true)
      {
        // std::cout<<"************ if 82 called *********************\n";
@@ -448,25 +454,28 @@ Bilin1::updateState(RankTwoTensor & strain_increment,
    // std::cout<<"d_bs = "<<_det_back_stress[_qp]<<"\n\n";
    // std::cout<<"backstress = "<<backstress<<"\n\n";
    // std::cout<<"back test = "<<_back_test[_qp]<<"\n\n";
-   //
+
+   // std::cout<<"tensor = "<<stress_new<<"\n\n";
+
    // std::cout<<"damage? = "<<_damage[_qp]<<"\n";
    // std::cout<<"pos damage? = "<<_damagepos[_qp]<<"\n";
    // std::cout<<"neg damage? = "<<_damageneg[_qp]<<"\n";
    // std::cout<<"test pos? = "<<_istestpos[_qp]<<"\n";
    // std::cout<<"test neg? = "<<_istestneg[_qp]<<"\n\n";
-   //
+
    // std::cout<<"old = "<<old<<"\n";
-   // std::cout<<"new = "<<s_new<<"\n";
+   // std::cout<<"trial = "<<s_new<<"\n";
+   // std::cout<<"final = "<<computeEffectiveStress(stress_new)<<"\n";
    // std::cout<<"pos limit = "<<_maxpos[_qp]<<"\n";
    // std::cout<<"neg limit = "<<_maxneg[_qp]<<"\n\n";
-   //
+
    // std::cout<<"strain old = "<<effective_strain<<"\n";
    // std::cout<<"strain = "<<effective_strain_old<<"\n";
    // std::cout<<"max strain = "<<_strain_max[_qp]<<"\n";
    // std::cout<<"min strain = "<<_strain_min[_qp]<<"\n";
    // std::cout<<"th pos = "<<_th_pos[_qp]<<"\n";
    // std::cout<<"th neg = "<<_th_neg[_qp]<<"\n\n";
-   //
+
    // std::cout<<"hard = "<<_hardening_slope<<"\n\n";
    //
    // std::cout<<"yield stress = "<<_yield_stress<<"\n";
