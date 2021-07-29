@@ -1,0 +1,44 @@
+brick x 3000 y 300 z 300
+brick x 1000 y 1000 z 1000
+move volume 2 y -650.15
+move volume 2 x 1500
+
+
+curve 1 interval 2
+curve 2 interval 10
+curve 12 interval 2
+
+curve 13 interval 20
+curve 14 interval 20
+curve 24 interval 20
+
+mesh volume all
+
+sideset 10 surface 4
+sideset 11 surface 1 2
+sideset 12 surface 6
+sideset 13 surface 3
+sideset 14 surface 5
+
+sideset 100 surface 11
+sideset 101 surface 9
+sideset 102 add face 55 56 57 58 59 60
+sideset 103 surface 11
+sideset 103 face with x_coord > 1600 remove
+sideset 103 face with z_coord > 250 remove
+sideset 103 face with z_coord < -250 remove
+
+nodeset 1000 surface 5
+nodeset 1000 node with x_coord < 900 remove
+nodeset 1001 surface 5
+nodeset 1001 node with x_coord < 1500 remove
+nodeset 1002 surface 4
+nodeset 1003 surface 6
+nodeset 1004 surface 3
+nodeset 1005 surface 11
+nodeset 1006 surface 9
+
+block 1 volume 1
+block 2 volume 2
+
+block 1 2 element type HEX8

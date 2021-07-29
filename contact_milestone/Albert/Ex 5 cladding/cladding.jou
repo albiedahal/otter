@@ -1,0 +1,46 @@
+create Cylinder height 128.8 radius 5.36 
+create Cylinder height 128.8 radius 4.76 
+subtract volume 2 from volume 1 
+surface 8 scheme hole rad_intervals 2 bias 0.0 
+mesh surface 8
+mesh volume 1
+
+sideset 10 surface 8
+sideset 11 surface 9
+sideset 12 surface 1
+sideset 13 surface 7
+
+create nodeset 100
+nodeset 100 add node all in surface 1
+nodeset 100 node with z_coord > 0 remove
+nodeset 100 node with z_coord < -1 remove
+
+create nodeset 101
+nodeset 101 add node all in surface 1
+nodeset 101 node with z_coord < -3.3 remove
+nodeset 101 node with z_coord > 3.3 remove
+
+create Cylinder height 128.8 radius 5.36 
+create Cylinder height 128.8 radius 4.76 
+subtract volume 4 from volume 3 
+move volume 3 y -12.72
+
+surface 18 scheme hole rad_intervals 2 bias 0.0 
+mesh surface 18
+
+mesh volume 3
+
+sideset 14 surface 17
+sideset 15 surface 18
+sideset 16 surface 10
+sideset 17 surface 16
+
+nodeset 102 surface 8
+nodeset 103 surface 9
+nodeset 104 surface 17
+nodeset 105 surface 18
+
+block 1 volume 1
+block 2 volume 3
+
+block 1 2 element type HEX8

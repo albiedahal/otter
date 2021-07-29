@@ -1,0 +1,17 @@
+brick x 3000 y 300 z 300
+brick x 3000 y 300 z 300
+move volume 2 y -302
+volume 1 size 150
+mesh volume 1
+volume 2 size 100
+mesh volume 2
+sideset 10 surface 4
+sideset 11 surface 1 2
+sideset 12 surface 6
+sideset 13 surface 3
+sideset 14 surface 5
+sideset 100 surface 11
+sideset 101 surface 9
+block 1 volume 1
+block 2 volume 2
+block 1 2 element type HEX8
