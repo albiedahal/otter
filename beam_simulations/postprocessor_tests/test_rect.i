@@ -9,7 +9,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 1
+  nx = 10
   xmin = 0
   xmax = 3000
 []
@@ -29,12 +29,28 @@
   []
 []
 
+# [AuxVariables]
+#   [forcey]
+#     order = FIRST
+#     family = LAGRANGE
+#   [../]
+#   [momentz]
+#     order = FIRST
+#     family = LAGRANGE
+#   [../]
+# [../]
 
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-1000*t'
+#     function = '-1000'
 #     variable = disp_y
+#     boundary = 'right'
+#   []
+#   [force_x2]
+#     type = UserForcingFunctionNodalKernel
+#     function = '-1000'
+#     variable = disp_z
 #     boundary = 'right'
 #   []
 # []
@@ -54,24 +70,27 @@
     youngs_modulus = 210
   []
   [strain]
-    type = LayeredBeam
-    num_layers = 6
-    Iy = 337500000
+    type = ComputeIncrementalBeamStrain
     Iz = 84375000
+    Iy = 337500000
     area = 45000
-    depth = 300
-    width = 150
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    yield_stress = '0.25'
-    hardening_constant = '52.5'
+    outputs = exodus
+    # output_properties = 'mech_disp_strain_increment mech_rot_strain_increment'
   []
   [stress]
-    type = ComputeBeamResultantsl
+    type = NonlinearBeam
     block = 0
+    yield_force = '8700000000 8700000000 8700000000'
+    yield_moments = '843750 843750 843750'
+    isotropic_hardening_slope = 0.2
+    kinematic_hardening_slope = 0.2
     outputs = exodus
     output_properties = 'forces moments'
+    hardening_constant = 1
+    # absolute_tolerance = 1e-3
   []
 []
 
@@ -116,7 +135,6 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    # function = '0.0005*t'
     function = 'load'
   [../]
 []
@@ -170,76 +188,85 @@
   [SMP]
     type = SMP
     full = true
-    # petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -snes_atol -snes_rtol -snes_max_it -ksp_atol -ksp_rtol -sub_pc_factor_shift_type'
-    # petsc_options_value = 'gmres asm lu 1E-8 1E-8 25 1E-8 1E-8 NONZERO'
-
   []
 []
 
 [Executioner]
   type = Transient
   solve_type = 'PJFNK'
-  petsc_options = '-snes_ksp_ew'
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
-  line_search = 'bt'
+  # petsc_options = '-snes_ksp_ew'
+  # petsc_options_iname = '-pc_type'
+  # petsc_options_value = 'lu'
+  # line_search = 'none'
   dt = 0.25
-  end_time = 3
+  end_time = 15
   nl_abs_tol = 1e-8
 []
 
 [Postprocessors]
-  # [disp_x]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = disp_x
-  # []
+
   [disp_y]
     type = PointValue
     point = '3000 0 0'
     variable = disp_y
   []
-  [rotation]
-    type = NodalMaxValue
-    boundary = right
-    variable = rot_z
-  []
-  [forces_y]
+  [rotation3]
     type = PointValue
-    point = '0 0 0'
-    variable = forces_y
+    point = '3000 0 0'
+    variable = rot_z
   []
   [moments_z]
     type = PointValue
     point = '0 0 0'
     variable = moments_z
+  []
+  [moments_y]
+    type = PointValue
+    point = '0 0 0'
+    variable = moments_y
+  []
+  [forces_x1]
+    type = PointValue
+    point = '0 0 0'
+    variable = forces_x
+  []
+  [forces_y1]
+    type = PointValue
+    point = '0 0 0'
+    variable = forces_y
+  []
+  [forces_z1]
+    type = PointValue
+    point = '0 0 0'
+    variable = forces_z
+  []
+  [stressxx]
+    type = RectangularBeamStress
+    stress_component = 11
+    point = '0 0 0'
+    depth = 300
+    width = 150
+    y_location = 1
+    z_location = 1
   [../]
-  # [moments_z2]
-  #   type = PointValue
-  #   point = '0.5 0 0'
-  #   variable = moments_z
-  # [../]
-  # [moments_z3]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = moments_z
-  # [../]
-  # [./moments]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = moments
-  # [../]
-  # [forces]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = forces
-  # [../]
-  # [./e_xx]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = total_stretch
-  # [../]
-  # [./ep_xx]
-  #   type = ElementIntegralMaterialProperty
-  #   mat_prop = plastic_strain
-  # [../]
+  [stressxy]
+    type = RectangularBeamStress
+    stress_component = 12
+    point = '0 0 0'
+    depth = 300
+    width = 150
+    y_location = 0.5
+    z_location = 0.5
+  [../]
+  [stressxz]
+    type = RectangularBeamStress
+    stress_component = 13
+    point = '0 0 0'
+    depth = 300
+    width = 150
+    y_location = 0.5
+    z_location = 0.5
+  [../]
 []
 
   [Outputs]

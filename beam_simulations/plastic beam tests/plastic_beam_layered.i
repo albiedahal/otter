@@ -11,7 +11,7 @@
   dim = 1
   nx = 1
   xmin = 0
-  xmax = 1
+  xmax = 3000
 []
 
 [Variables]
@@ -29,59 +29,45 @@
   []
 []
 
-[AuxVariables]
-  [forcey]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [momentz]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-[../]
 
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-1000'
+#     function = '-100*t'
 #     variable = disp_y
-#     boundary = 'right'
-#   []
-#   [force_x2]
-#     type = UserForcingFunctionNodalKernel
-#     function = '-1000'
-#     variable = disp_z
 #     boundary = 'right'
 #   []
 # []
 
-[Functions]
-  [load]
-    type = PiecewiseLinear
-    x = '0   1       2      3      4      5   6    7      8     9       10      11 12   13     14     15'
-    y = '0 0.0004 0.0008 0.0012 0.0008 0.0004 0 -0.004 -0.008 -.00012 -0.008 -0.004 0 0.0004 0.0008 0.0012'
-  []
-[]
+# [Functions]
+#   [load]
+#     type = ConstantFunction
+#     value = -5000
+#   []
+# []
 
 [Materials]
   [elasticity]
     type = ComputeElasticityBeam
-    poissons_ratio = 0.33
-    youngs_modulus = 7.310e10
+    poissons_ratio = 0.3
+    youngs_modulus = 210
   []
   [strain]
-    type = ComputeIncrementalBeamStrainl
-    Iy = 8.33e-6
-    Iz = 8.33e-6
-    area = 0.01
+    type = LayeredBeam
+    num_layers = 6
+    Iy = 337500000
+    Iz = 84375000
+    area = 45000
+    depth = 300
+    width = 150
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    outputs = exodus
-    output_properties = 'mech_disp_strain_increment mech_rot_strain_increment'
+    yield_stress = '0.25'
+    hardening_constant = '0.25'
   []
   [stress]
-    type = ComputeBeamResultants
+    type = ComputeBeamResultantsl
     block = 0
     outputs = exodus
     output_properties = 'forces moments'
@@ -129,7 +115,7 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = 'load'
+    function = '10*t'
   [../]
 []
 
@@ -147,7 +133,6 @@
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 1
-    save_in = forcey
   []
   [solid_disp_z]
     type = StressDivergenceBeam
@@ -176,7 +161,6 @@
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     component = 5
-    save_in = momentz
   []
 []
 
@@ -184,6 +168,9 @@
   [SMP]
     type = SMP
     full = true
+    # petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -snes_atol -snes_rtol -snes_max_it -ksp_atol -ksp_rtol -sub_pc_factor_shift_type'
+    # petsc_options_value = 'gmres asm lu 1E-8 1E-8 25 1E-8 1E-8 NONZERO'
+
   []
 []
 
@@ -193,9 +180,9 @@
   # petsc_options = '-snes_ksp_ew'
   # petsc_options_iname = '-pc_type'
   # petsc_options_value = 'lu'
-  # line_search = 'none'
-  dt = 0.25
-  end_time = 15
+  # line_search = 'bt'
+  dt = 2
+  end_time = 30
   nl_abs_tol = 1e-8
 []
 
@@ -207,89 +194,40 @@
   # []
   [disp_y]
     type = PointValue
-    point = '1 0 0'
+    point = '3000 0 0'
     variable = disp_y
   []
-  # [disp_y2]
-  #   type = PointValue
-  #   point = '0.75 0 0'
-  #   variable = disp_y
-  # []
-  # [rotation1]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = rot_x
-  # []
-  # [rotation2]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = rot_y
-  # []
-  [rotation3]
-    type = PointValue
-    point = '1 0 0'
+  [rotation]
+    type = NodalMaxValue
+    boundary = right
     variable = rot_z
   []
-  [intstr1]
+  [forces_y]
+    type = PointValue
+    point = '3000 0 0'
+    variable = forces_y
+  []
+  [moments_z]
     type = PointValue
     point = '0 0 0'
-    variable = mech_disp_strain_increment_x
-  []
-  [intstr2]
-    type = PointValue
-    point = '1 0 0'
-    variable = mech_disp_strain_increment_y
-  []
-  [intstr3]
-    type = PointValue
-    point = '1 0 0'
-    variable = mech_disp_strain_increment_z
-  []
-  # [moments_z]
-  #   type = PointValue
-  #   point = '0 0 0'
-  #   variable = moments_z
-  # []
-  # [moments_z2]
-  #   type = PointValue
-  #   point = '0.5 0 0'
-  #   variable = moments_z
-  # []
-  [moments_z3]
-    type = PointValue
-    point = '1 0 0'
     variable = moments_z
-  []
-  # [forces_y1]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = forces_y
-  # []
-  # [forces_y2]
-  #   type = PointValue
-  #   point = '0.75 0 0'
-  #   variable = forces_y
-  # []
-  # [res_forcey1]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = forcey
-  # []
-  # [res_forcey2]
-  #   type = PointValue
-  #   point = '0.75 0 0'
-  #   variable = forcey
-  # []
-  # [res_momentz1]
-  #   type = PointValue
-  #   point = '1 0 0'
-  #   variable = momentz
-  # []
-  # [res_momentz2]
-  #   type = PointValue
-  #   point = '0 0 0'
-  #   variable = momentz
-  # []
+  [../]
+  # [./moments]
+  #   type = ElementIntegralMaterialProperty
+  #   mat_prop = moments
+  # [../]
+  # [forces]
+  #   type = ElementIntegralMaterialProperty
+  #   mat_prop = forces
+  # [../]
+  # [./e_xx]
+  #   type = ElementIntegralMaterialProperty
+  #   mat_prop = total_stretch
+  # [../]
+  # [./ep_xx]
+  #   type = ElementIntegralMaterialProperty
+  #   mat_prop = plastic_strain
+  # [../]
 []
 
   [Outputs]

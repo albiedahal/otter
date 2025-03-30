@@ -7,20 +7,12 @@
 
 
 [Mesh]
-  [beam]
-  type = GeneratedMeshGenerator
+  type = GeneratedMesh
   dim = 1
-  nx = 10
+  nx = 1
   xmin = 0
   xmax = 3000
-  []
-  [mid]
-  type = ExtraNodesetGenerator
-  new_boundary = mid
-  coord = '1500 0 0'
-  input = beam
-[../]
-[../]
+[]
 
 [Variables]
   [disp_x]
@@ -38,19 +30,20 @@
 []
 
 
-[NodalKernels]
-  [force_y2]
-    type = UserForcingFunctionNodalKernel
-    function = 'load'
-    variable = disp_y
-    boundary = 'mid'
-  []
-[]
+# [NodalKernels]
+#   [force_y2]
+#     type = UserForcingFunctionNodalKernel
+#     function = '-1000*t'
+#     variable = disp_y
+#     boundary = 'right'
+#   []
+# []
 
 [Functions]
   [load]
-    type = ConstantFunction
-    value = -5000
+    type = PiecewiseLinear
+    x = '0   1   2   3   4  5  6  7  8   9  10 11 12 13 14 15'
+    y = '0   30  60  90  60  30  0 -30 -60 -90  -60 -30  0  30  60 90'
   []
 []
 
@@ -61,20 +54,21 @@
     youngs_modulus = 210
   []
   [strain]
-    type = ComputeIncrementalBeamStrain
-    Iz = 84375000
+    type = LayeredBeam
+    num_layers = 6
     Iy = 337500000
+    Iz = 84375000
     area = 45000
-    # depth = 300
-    # width = 150
+    depth = 300
+    width = 150
     rotations = 'rot_x rot_y rot_z'
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
-    # yield_stress = '0.25'
-    # hardening_constant = '0'
+    yield_stress = '0.25'
+    hardening_constant = '52.5'
   []
   [stress]
-    type = ComputeBeamResultants
+    type = ComputeBeamResultantsl
     block = 0
     outputs = exodus
     output_properties = 'forces moments'
@@ -100,66 +94,31 @@
     boundary = left
     value = 0
   []
-  # [fixr1]
-  #   type = DirichletBC
-  #   variable = rot_x
-  #   boundary = left
-  #   value = 0
-  # []
-  # [fixr2]
-  #   type = DirichletBC
-  #   variable = rot_y
-  #   boundary = left
-  #   value = 0
-  # []
-  # [fixr3]
-  #   type = DirichletBC
-  #   variable = rot_z
-  #   boundary = left
-  #   value = 0
-  # []
-  [fixx2]
+  [fixr1]
     type = DirichletBC
-    variable = disp_x
-    boundary = right
+    variable = rot_x
+    boundary = left
     value = 0
   []
-  [fixy2]
+  [fixr2]
     type = DirichletBC
+    variable = rot_y
+    boundary = left
+    value = 0
+  []
+  [fixr3]
+    type = DirichletBC
+    variable = rot_z
+    boundary = left
+    value = 0
+  []
+  [load]
+    type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    value = 0
-  []
-  [fixz2]
-    type = DirichletBC
-    variable = disp_z
-    boundary = right
-    value = 0
-  []
-  # [fixr21]
-  #   type = DirichletBC
-  #   variable = rot_x
-  #   boundary = right
-  #   value = 0
-  # []
-  # [fixr22]
-  #   type = DirichletBC
-  #   variable = rot_y
-  #   boundary = right
-  #   value = 0
-  # []
-  # [fixr23]
-  #   type = DirichletBC
-  #   variable = rot_z
-  #   boundary = right
-  #   value = 0
-  # []
-  # [load]
-  #   type = FunctionDirichletBC
-  #   variable = disp_y
-  #   boundary = mid
-  #   function = '5*t'
-  # [../]
+    # function = '0.0005*t'
+    function = 'load'
+  [../]
 []
 
 [Kernels]
@@ -219,13 +178,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
+  solve_type = 'PJFNK'
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
   line_search = 'bt'
-  dt = 1
-  end_time = 1
+  dt = 0.25
+  end_time = 1.5
   nl_abs_tol = 1e-8
 []
 
@@ -237,7 +196,7 @@
   # []
   [disp_y]
     type = PointValue
-    point = '1500 0 0'
+    point = '3000 0 0'
     variable = disp_y
   []
   [rotation]
@@ -252,9 +211,19 @@
   []
   [moments_z]
     type = PointValue
-    point = '1500 0 0'
+    point = '0 0 0'
     variable = moments_z
   [../]
+  # [moments_z2]
+  #   type = PointValue
+  #   point = '0.5 0 0'
+  #   variable = moments_z
+  # [../]
+  # [moments_z3]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = moments_z
+  # [../]
   # [./moments]
   #   type = ElementIntegralMaterialProperty
   #   mat_prop = moments

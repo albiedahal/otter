@@ -33,18 +33,19 @@
 # [NodalKernels]
 #   [force_y2]
 #     type = UserForcingFunctionNodalKernel
-#     function = '-100*t'
+#     function = '-1000*t'
 #     variable = disp_y
 #     boundary = 'right'
 #   []
 # []
 
-# [Functions]
-#   [load]
-#     type = ConstantFunction
-#     value = -5000
-#   []
-# []
+[Functions]
+  [load]
+    type = PiecewiseLinear
+    x = '0   1   2   3   4  5  6  7  8   9  10 11 12 13 14 15'
+    y = '0   30  60  90  60  30  0 -30 -60 -90  -60 -30  0  30  60 90'
+  []
+[]
 
 [Materials]
   [elasticity]
@@ -53,7 +54,7 @@
     youngs_modulus = 210
   []
   [strain]
-    type = LayeredBeam
+    type = LayeredBeamKin
     num_layers = 6
     Iy = 337500000
     Iz = 84375000
@@ -64,7 +65,7 @@
     displacements = 'disp_x disp_y disp_z'
     y_orientation = '0 1 0'
     yield_stress = '0.25'
-    hardening_constant = '0'
+    hardening_constant = '42'
   []
   [stress]
     type = ComputeBeamResultantsl
@@ -115,7 +116,8 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = right
-    function = '10*t'
+    # function = '0.0005*t'
+    function = 'load'
   [../]
 []
 
@@ -176,13 +178,13 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'NEWTON'
-  # petsc_options = '-snes_ksp_ew'
-  # petsc_options_iname = '-pc_type'
-  # petsc_options_value = 'lu'
-  # line_search = 'bt'
-  dt = 2
-  end_time = 30
+  solve_type = 'PJFNK'
+  petsc_options = '-snes_ksp_ew'
+  petsc_options_iname = '-pc_type'
+  petsc_options_value = 'lu'
+  line_search = 'bt'
+  dt = 0.25
+  end_time = 1.5
   nl_abs_tol = 1e-8
 []
 
@@ -204,7 +206,7 @@
   []
   [forces_y]
     type = PointValue
-    point = '3000 0 0'
+    point = '0 0 0'
     variable = forces_y
   []
   [moments_z]
@@ -212,6 +214,16 @@
     point = '0 0 0'
     variable = moments_z
   [../]
+  # [moments_z2]
+  #   type = PointValue
+  #   point = '0.5 0 0'
+  #   variable = moments_z
+  # [../]
+  # [moments_z3]
+  #   type = PointValue
+  #   point = '1 0 0'
+  #   variable = moments_z
+  # [../]
   # [./moments]
   #   type = ElementIntegralMaterialProperty
   #   mat_prop = moments
