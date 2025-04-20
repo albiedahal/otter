@@ -1,0 +1,94 @@
+reset
+brick x 8.6 y 224.6 z 1100
+brick x 254 y 14.2 z 1100
+move Volume 2 y 119.4 include_merged 
+brick x 254 y 14.2 z 1100
+move Volume 3 y -119.4 include_merged 
+webcut volume all with plane zplane offset 335 imprint merge
+merge volume all
+imprint volume all
+sideset 1 surface 1 7 13
+sideset 2 surface 2 8 14
+sideset 3 surface 19 31 45
+sideset 4 surface 32 42 48 54
+sideset 5 surface 33 35 39 41 47 49 53 55
+
+
+webcut volume 4 5 6 with plane zplane offset -200 imprint merge
+
+surface 7  size auto factor 10 propagate 
+surface 1  size auto factor 10 propagate 
+surface 13  size auto factor 10 propagate 
+mesh surface 1 7 13
+refine surface 1 7 13
+
+surface 21 size auto factor 8 propagate
+surface 23  size auto factor 8 propagate
+
+volume 1  redistribute nodes off 
+volume 1  scheme Sweep  source surface 1    target surface 19  sweep transform least squares 
+volume 1  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 1 
+
+surface 29 30 size auto factor 9 propagate 
+surface 35  size auto factor 10 propagate 
+
+volume 2  redistribute nodes off 
+volume 2  scheme Sweep  source surface 7    target surface 31   sweep transform least squares 
+volume 2  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 2 
+
+surface 43 44 size auto factor 9 propagate 
+surface 48  size auto factor 8 propagate 
+
+volume 3  redistribute nodes off 
+volume 3  scheme Sweep  source surface 13    target surface 45   sweep transform least squares 
+volume 3  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 3 
+
+surface 60 58 size auto factor 7 propagate 
+
+volume 4  redistribute nodes off 
+volume 4  scheme Sweep  source surface 19    target surface 57   sweep transform least squares 
+volume 4  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 4 
+
+surface 69 71 72 size auto factor 8 propagate 
+
+volume 5  redistribute nodes off 
+volume 5  scheme Sweep  source surface 31    target surface 67   sweep transform least squares 
+volume 5  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 5
+
+surface 83 85 86 size auto factor 8 propagate 
+
+volume 6  redistribute nodes off 
+volume 6  scheme Sweep  source surface 45    target surface 81   sweep transform least squares 
+volume 6  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 6 
+
+surface 64 66  size auto factor 5
+
+volume 7  redistribute nodes off 
+volume 7  scheme Sweep  source surface 57    target surface 2   sweep transform least squares 
+volume 7  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 7 
+
+surface 75 77 80  size auto factor 5
+
+volume 8  redistribute nodes off 
+volume 8  scheme Sweep  source surface 67    target surface 8   sweep transform least squares 
+volume 8  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 8
+
+surface 89 91 93  size auto factor 5
+
+volume 9  redistribute nodes off 
+volume 9  scheme Sweep  source surface 81    target surface 14   sweep transform least squares 
+volume 9  autosmooth target on  fixed imprints off  smart smooth off 
+mesh volume 9
+
+
+mesh volume all
+block 1 volume all
+block 1 element HEX8
